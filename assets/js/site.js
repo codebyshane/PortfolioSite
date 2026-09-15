@@ -6,36 +6,13 @@
 
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
   var SPRITES = {
-    idle: "images/pets/dog-idle.gif",
-    lie: "images/pets/dog-lie.gif",
     walk: "images/pets/dog-walk.gif",
     walkFast: "images/pets/dog-walk-fast.gif",
     run: "images/pets/dog-run.gif"
   };
-  // Modeled on vscode-pets dog sequence + hold times (tonybaloney/vscode-pets).
-  var SEQUENCE = {
-    sit: ["walkRight", "runRight", "lie"],
-    lie: ["walkRight", "runRight"],
-    walkRight: ["walkLeft", "runLeft"],
-    runRight: ["walkLeft", "runLeft"],
-    walkLeft: ["sit", "lie", "walkRight", "runRight"],
-    runLeft: ["sit", "lie", "walkRight", "runRight"]
-  };
-  var HOLD = {
-    sit: [2800, 6500],
-    lie: [3200, 7200],
-    walkRight: [4500, 9000],
-    walkLeft: [4500, 9000],
-    runRight: [2200, 5200],
-    runLeft: [2200, 5200]
-  };
 
   function randBetween(a, b) {
     return a + Math.random() * (b - a);
-  }
-
-  function pick(list) {
-    return list[Math.floor(Math.random() * list.length)];
   }
 
   function petWidth() {
@@ -62,22 +39,17 @@
     lab.src = src;
   }
 
+  // Easter eggs stay off for reduced motion — no lingering pets.
   if (reduce.matches) {
-    setSprite("idle");
-    place(24);
-    face(1);
-    lab.style.opacity = "1";
-    lab.style.cursor = "default";
+    lab.style.display = "none";
     if (mulletCanvas) mulletCanvas.style.display = "none";
     return;
   }
 
-  var state = "sit";
   var dir = 1;
-  var x = Math.min(40, maxX());
-  var speed = 3 * randBetween(0.7, 1.3);
-  var stateUntil = 0;
-  var follow = null;
+  var x = -80;
+  var speed = 3;
+  var gait = "walk";
   var last = 0;
   var mode = "idle";
   var modeUntil = 0;
@@ -90,23 +62,22 @@
   var MH = 130;
   var waterY = MH - 18;
 
-  function showLab(on) {
-    lab.style.opacity = on ? "1" : "0";
-    lab.style.pointerEvents = on ? "auto" : "none";
+  function hideAll() {
+    mode = "idle";
+    leap = null;
+    drops = [];
+    lab.style.opacity = "0";
+    lab.style.pointerEvents = "none";
     if (mulletCanvas) {
-      mulletCanvas.style.opacity = on ? "0" : "1";
-      if (on) {
-        mctx && mctx.clearRect(0, 0, MW, MH);
-      }
+      mulletCanvas.style.opacity = "0";
+      if (mctx) mctx.clearRect(0, 0, MW, MH);
     }
   }
 
-  function scheduleNextAct() {
-    // Sporadic gaps: sometimes a short beat, sometimes a long quiet shore.
-    var quiet = Math.random() < 0.35;
-    mode = "idle";
-    showLab(false);
-    modeUntil = performance.now() + (quiet ? randBetween(6000, 18000) : randBetween(1800, 5000));
+  function scheduleQuiet() {
+    hideAll();
+    // Long gaps so the shore usually looks empty.
+    modeUntil = performance.now() + randBetween(90000, 240000);
   }
 
   function beginLab() {
@@ -114,153 +85,120 @@
     leap = null;
     drops = [];
     if (mctx) mctx.clearRect(0, 0, MW, MH);
-    speed = 3 * randBetween(0.7, 1.3);
-    state = pick(["sit", "sit", "lie", "walkRight"]);
-    dir = state.indexOf("Left") >= 0 ? -1 : 1;
-    if (state === "sit" || state === "lie") dir = Math.random() < 0.5 ? -1 : 1;
-    x = randBetween(12, Math.max(12, maxX() - 12));
-    applyState(state);
-    showLab(true);
-    // Lab hangs around for a stretch, then yields to the mullet or a quiet gap.
-    modeUntil = performance.now() + randBetween(10000, 26000);
+    dir = Math.random() < 0.5 ? 1 : -1;
+    gait = Math.random() < 0.35 ? "run" : "walk";
+    speed = (gait === "run" ? 4.2 : 2.8) * randBetween(0.9, 1.2);
+    x = dir > 0 ? -petWidth() - 8 : maxX() + petWidth() + 8;
+    setSprite(gait === "run" ? (Math.random() < 0.5 ? "run" : "walkFast") : "walk");
+    face(dir);
+    place(x);
+    lab.style.opacity = "1";
+    if (mulletCanvas) mulletCanvas.style.opacity = "0";
   }
 
   function beginFish() {
     mode = "fish";
-    leapsLeft = 1 + Math.floor(Math.random() * 3);
-    splashWait = randBetween(0.35, 0.9);
+    leapsLeft = Math.random() < 0.7 ? 1 : 2;
+    splashWait = randBetween(0.4, 1.1);
     leap = null;
     drops = [];
     if (mctx) mctx.clearRect(0, 0, MW, MH);
-    showLab(false);
-  }
-
-  function applyState(next) {
-    state = next;
-    var hold = HOLD[state] || [3000, 5000];
-    stateUntil = performance.now() + randBetween(hold[0], hold[1]);
-    if (state === "sit") {
-      setSprite("idle");
-      dir = Math.random() < 0.5 ? -1 : 1;
-    } else if (state === "lie") {
-      setSprite("lie");
-      dir = Math.random() < 0.5 ? -1 : 1;
-    } else if (state === "walkRight") {
-      setSprite("walk");
-      dir = 1;
-    } else if (state === "walkLeft") {
-      setSprite("walk");
-      dir = -1;
-    } else if (state === "runRight") {
-      setSprite(Math.random() < 0.55 ? "walkFast" : "run");
-      dir = 1;
-    } else if (state === "runLeft") {
-      setSprite(Math.random() < 0.55 ? "walkFast" : "run");
-      dir = -1;
-    }
-    face(dir);
-  }
-
-  function chooseNextState() {
-    var options = SEQUENCE[state] || SEQUENCE.sit;
-    applyState(pick(options));
+    lab.style.opacity = "0";
+    if (mulletCanvas) mulletCanvas.style.opacity = "1";
   }
 
   function startLeap() {
     var span = Math.max(track.clientWidth - 200, 100);
     var dirSign = Math.random() < 0.5 ? 1 : -1;
-    var dist = randBetween(70, 130);
-    var x0 = randBetween(60, span);
-    // Keep the whole arc on the shore.
+    var dist = randBetween(64, 110);
+    var x0 = randBetween(70, span);
     if (dirSign > 0 && x0 + dist > span + 40) dirSign = -1;
     if (dirSign < 0 && x0 - dist < 40) dirSign = 1;
     leap = {
       t: 0,
-      dur: randBetween(0.68, 0.95),
+      dur: randBetween(0.62, 0.85),
       x0: x0,
       dist: dist,
-      amp: randBetween(38, 58),
+      amp: randBetween(32, 48),
       dir: dirSign
     };
   }
 
   function spawnSplash(wx, dirSign) {
     var i;
-    for (i = 0; i < 12; i += 1) {
+    for (i = 0; i < 10; i += 1) {
       drops.push({
-        x: MW / 2 + (Math.random() - 0.5) * 22,
+        x: MW / 2 + (Math.random() - 0.5) * 20,
         y: waterY,
-        vx: (Math.random() - 0.5) * 90 + dirSign * 18,
-        vy: -50 - Math.random() * 90,
-        life: 0.28 + Math.random() * 0.28,
-        r: 1.1 + Math.random() * 1.4
+        vx: (Math.random() - 0.5) * 80 + dirSign * 14,
+        vy: -45 - Math.random() * 80,
+        life: 0.24 + Math.random() * 0.22,
+        r: 1 + Math.random() * 1.2
       });
     }
     mulletCanvas.style.left = wx - MW / 2 + "px";
   }
 
-  function drawMullet(px, py, angle, facing) {
+  function drawMullet(px, py, angle) {
     mctx.save();
     mctx.translate(px, py);
-    mctx.scale(facing, 1);
-    mctx.rotate(angle * facing);
+    // Local +x is the head. Angle comes from path tangent so the nose leads.
+    mctx.rotate(angle);
 
-    // Silver Florida mullet — head leads toward +x before scale.
+    // Body — thicker toward the head
     mctx.beginPath();
-    mctx.ellipse(0, 0, 18, 5.4, 0, 0, Math.PI * 2);
-    mctx.fillStyle = "#c5cdc6";
-    mctx.fill();
-
-    mctx.beginPath();
-    mctx.ellipse(-1, -1.8, 15, 2.8, 0, 0, Math.PI * 2);
-    mctx.fillStyle = "#6f7a70";
-    mctx.fill();
-
-    // Darker olive back stripe
-    mctx.beginPath();
-    mctx.ellipse(-2, -2.4, 12, 1.4, 0, 0, Math.PI * 2);
-    mctx.fillStyle = "#4e5850";
-    mctx.fill();
-
-    // Forked tail (rear / -x)
-    mctx.beginPath();
-    mctx.moveTo(-16, 0);
-    mctx.lineTo(-24, -5.2);
-    mctx.lineTo(-20, 0);
-    mctx.lineTo(-24, 5.2);
+    mctx.moveTo(-17, 0);
+    mctx.bezierCurveTo(-14, -5.2, -2, -6.2, 8, -4.2);
+    mctx.bezierCurveTo(14, -2.8, 18, -1.2, 19.5, 0);
+    mctx.bezierCurveTo(18, 1.2, 14, 2.8, 8, 4.2);
+    mctx.bezierCurveTo(-2, 6.2, -14, 5.2, -17, 0);
     mctx.closePath();
-    mctx.fillStyle = "#8a948a";
+    mctx.fillStyle = "#b9c2b9";
     mctx.fill();
 
-    // Dorsal
+    // Olive back
     mctx.beginPath();
-    mctx.moveTo(-2, -4.8);
-    mctx.lineTo(4, -9.2);
-    mctx.lineTo(8, -3.6);
+    mctx.moveTo(-14, -1.2);
+    mctx.bezierCurveTo(-6, -5.4, 4, -5.6, 12, -2.4);
+    mctx.bezierCurveTo(4, -3.8, -6, -3.4, -14, -1.2);
     mctx.closePath();
-    mctx.fillStyle = "#556055";
+    mctx.fillStyle = "#5f6a60";
     mctx.fill();
 
-    // Anal fin
+    // Forked tail at the rear (−x)
     mctx.beginPath();
-    mctx.moveTo(2, 4.2);
-    mctx.lineTo(6, 7.2);
-    mctx.lineTo(9, 3.4);
+    mctx.moveTo(-15, 0);
+    mctx.lineTo(-24, -5.8);
+    mctx.quadraticCurveTo(-19.5, -1.2, -17.5, 0);
+    mctx.quadraticCurveTo(-19.5, 1.2, -24, 5.8);
     mctx.closePath();
-    mctx.fillStyle = "#6a746a";
+    mctx.fillStyle = "#7d877d";
     mctx.fill();
 
-    // Eye near the head (+x)
+    // Dorsal fin
     mctx.beginPath();
-    mctx.arc(10, -0.8, 1.2, 0, Math.PI * 2);
-    mctx.fillStyle = "#1a211c";
+    mctx.moveTo(-1, -4.6);
+    mctx.lineTo(5, -9.4);
+    mctx.lineTo(9, -3.8);
+    mctx.closePath();
+    mctx.fillStyle = "#4d574d";
     mctx.fill();
 
-    // Mouth tip
+    // Eye near the snout
     mctx.beginPath();
-    mctx.moveTo(16.5, 0.4);
-    mctx.lineTo(19.5, 1.2);
-    mctx.lineTo(16.5, 1.6);
+    mctx.arc(11.5, -0.9, 1.25, 0, Math.PI * 2);
+    mctx.fillStyle = "#141a15";
+    mctx.fill();
+    mctx.beginPath();
+    mctx.arc(11.85, -1.15, 0.35, 0, Math.PI * 2);
+    mctx.fillStyle = "#dfe6df";
+    mctx.fill();
+
+    // Snout tip
+    mctx.beginPath();
+    mctx.moveTo(17.5, -0.6);
+    mctx.lineTo(21, 0.15);
+    mctx.lineTo(17.5, 1.1);
     mctx.closePath();
     mctx.fillStyle = "#9aa49a";
     mctx.fill();
@@ -274,6 +212,7 @@
     var i;
     var drop;
     var prevY;
+    var prevX;
     var ny;
     var angle;
     var wx;
@@ -290,20 +229,21 @@
         var landDir = leap.dir;
         leap = null;
         leapsLeft -= 1;
-        splashWait = leapsLeft > 0 ? randBetween(0.45, 1.35) : randBetween(0.6, 1.1);
+        splashWait = leapsLeft > 0 ? randBetween(0.55, 1.2) : randBetween(0.45, 0.85);
         spawnSplash(landX, landDir);
       } else {
-        prevY = waterY - leap.amp * Math.sin(Math.PI * Math.max(progress - 0.03, 0));
+        prevX = leap.x0 + leap.dist * leap.dir * Math.max(progress - 0.04, 0);
+        prevY = waterY - leap.amp * Math.sin(Math.PI * Math.max(progress - 0.04, 0));
         ny = waterY - leap.amp * Math.sin(Math.PI * progress);
-        // Angle from path tangent; facing handles left/right so head always leads.
-        angle = Math.atan2(ny - prevY, Math.abs(leap.dist * 0.03));
-        drawMullet(MW / 2, ny, angle, leap.dir);
+        // Signed dx keeps the head aimed along the leap.
+        angle = Math.atan2(ny - prevY, wx - prevX);
+        drawMullet(MW / 2, ny, angle);
       }
     } else if (splashWait > 0) {
       splashWait -= dt;
       if (splashWait <= 0) {
         if (leapsLeft > 0) startLeap();
-        else scheduleNextAct();
+        else scheduleQuiet();
       }
     }
 
@@ -326,67 +266,35 @@
     }
   }
 
-  function tickLab(dt, now) {
-    var moving = state.indexOf("walk") === 0 || state.indexOf("run") === 0;
-    var mult = state.indexOf("run") === 0 ? 1.6 : 1;
-    var step;
-
-    if (moving) {
-      if (follow !== null) {
-        var targetDir = follow >= x ? 1 : -1;
-        if (targetDir !== dir) {
-          applyState(targetDir > 0 ? (mult > 1 ? "runRight" : "walkRight") : (mult > 1 ? "runLeft" : "walkLeft"));
-        }
-      }
-      step = speed * mult * 60 * dt;
-      x += dir * step;
-      if (x <= 0) {
-        x = 0;
-        applyState(mult > 1 ? "runRight" : "walkRight");
-      } else if (x >= maxX()) {
-        x = maxX();
-        applyState(mult > 1 ? "runLeft" : "walkLeft");
-      } else if (now >= stateUntil) {
-        chooseNextState();
-      }
-    } else if (now >= stateUntil) {
-      chooseNextState();
-    }
-
+  function tickLab(dt) {
+    var mult = gait === "run" ? 1.55 : 1;
+    x += dir * speed * mult * 60 * dt;
     place(x);
     face(dir);
+    if ((dir > 0 && x > maxX() + petWidth() + 12) || (dir < 0 && x < -petWidth() - 12)) {
+      scheduleQuiet();
+    }
   }
 
-  lab.addEventListener("click", function () {
-    if (mode !== "lab") return;
-    applyState(dir > 0 ? "runRight" : "runLeft");
-  });
-
-  window.addEventListener("mousemove", function (event) {
-    var rect = track.getBoundingClientRect();
-    if (Math.abs(event.clientY - rect.bottom) < 100) {
-      follow = event.clientX - rect.left - petWidth() / 2;
-    } else {
-      follow = null;
-    }
-  });
-
   window.addEventListener("resize", function () {
-    x = Math.min(x, maxX());
-    place(x);
+    if (mode === "lab") place(x);
   });
 
-  // First appearance after a short, irregular pause.
-  mode = "idle";
-  showLab(false);
+  // Stay quiet for a while before the first pass-through.
+  hideAll();
   modeUntil =
     performance.now() +
     (/\bshore=now\b/.test(location.search)
-      ? 200
-      : randBetween(2500, 8000));
-  setSprite("idle");
+      ? 400
+      : randBetween(45000, 150000));
+  setSprite("walk");
   place(x);
   face(dir);
+
+  function pickAct() {
+    if (Math.random() < 0.45) beginFish();
+    else beginLab();
+  }
 
   function tick(now) {
     var dt = Math.min((now - last) / 1000, 0.05);
@@ -402,24 +310,13 @@
       return;
     }
 
-    if (mode === "idle") {
-      if (now >= modeUntil) {
-        if (Math.random() < 0.28) beginFish();
-        else beginLab();
-      }
+    if (mode === "lab") {
+      tickLab(dt);
       window.requestAnimationFrame(tick);
       return;
     }
 
-    // lab mode
-    if (now >= modeUntil) {
-      if (Math.random() < 0.55) beginFish();
-      else scheduleNextAct();
-      window.requestAnimationFrame(tick);
-      return;
-    }
-
-    tickLab(dt, now);
+    if (now >= modeUntil) pickAct();
     window.requestAnimationFrame(tick);
   }
 
