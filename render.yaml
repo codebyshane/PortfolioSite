@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: shaneferguson-dev
+    runtime: static
+    buildCommand: "true"
+    staticPublishPath: .
+    domains:
+      - shaneferguson.dev
+      - shaneferguson.net
