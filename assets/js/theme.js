@@ -5,6 +5,83 @@
   var coordsKey = "theme-coords";
   var colors = { light: "#f6f5f2", dark: "#131210" };
   var schemeMeta = document.querySelector('meta[name="color-scheme"]');
+  var lastAccentKey = "accent-last";
+  var accents = [
+    {
+      name: "teal",
+      light: { accent: "#0a5852", hover: "#08443f", btn: "#f6f5f2" },
+      dark: { accent: "#7ed4cb", hover: "#9ee0d8", btn: "#131210" }
+    },
+    {
+      name: "purple",
+      light: { accent: "#5b21b6", hover: "#4c1d95", btn: "#f6f5f2" },
+      dark: { accent: "#c4b5fd", hover: "#ddd6fe", btn: "#131210" }
+    },
+    {
+      name: "blue",
+      light: { accent: "#1d4ed8", hover: "#1e40af", btn: "#f6f5f2" },
+      dark: { accent: "#93c5fd", hover: "#bfdbfe", btn: "#131210" }
+    },
+    {
+      name: "navy",
+      light: { accent: "#1e3a8a", hover: "#172554", btn: "#f6f5f2" },
+      dark: { accent: "#a5b4fc", hover: "#c7d2fe", btn: "#131210" }
+    },
+    {
+      name: "yellow",
+      light: { accent: "#854d0e", hover: "#713f12", btn: "#f6f5f2" },
+      dark: { accent: "#facc15", hover: "#fde047", btn: "#131210" }
+    },
+    {
+      name: "black",
+      light: { accent: "#171717", hover: "#0a0a0a", btn: "#f6f5f2" },
+      dark: { accent: "#f5f5f4", hover: "#ffffff", btn: "#131210" }
+    },
+    {
+      name: "red",
+      light: { accent: "#9f1239", hover: "#881337", btn: "#f6f5f2" },
+      dark: { accent: "#fda4af", hover: "#fecdd3", btn: "#131210" }
+    },
+    {
+      name: "orange",
+      light: { accent: "#9a3412", hover: "#7c2d12", btn: "#f6f5f2" },
+      dark: { accent: "#fdba74", hover: "#fed7aa", btn: "#131210" }
+    },
+    {
+      name: "green",
+      light: { accent: "#166534", hover: "#14532d", btn: "#f6f5f2" },
+      dark: { accent: "#86efac", hover: "#bbf7d0", btn: "#131210" }
+    },
+    {
+      name: "pink",
+      light: { accent: "#9d174d", hover: "#831843", btn: "#f6f5f2" },
+      dark: { accent: "#f9a8d4", hover: "#fbcfe8", btn: "#131210" }
+    }
+  ];
+  var currentAccent = pickAccent();
+
+  function pickAccent() {
+    var last = null;
+    try {
+      last = localStorage.getItem(lastAccentKey);
+    } catch (e) {}
+    var choices = accents.filter(function (item) {
+      return item.name !== last;
+    });
+    if (!choices.length) choices = accents;
+    var picked = choices[Math.floor(Math.random() * choices.length)];
+    try {
+      localStorage.setItem(lastAccentKey, picked.name);
+    } catch (e) {}
+    return picked;
+  }
+
+  function applyAccent(theme) {
+    var pair = currentAccent[theme] || currentAccent.light;
+    root.style.setProperty("--accent", pair.accent);
+    root.style.setProperty("--accent-hover", pair.hover);
+    root.style.setProperty("--btn-fg", pair.btn);
+  }
   var dayMs = 86400000;
   var themeTimer;
   var themeToggle;
@@ -235,6 +312,7 @@
         localStorage.setItem(storageKey, theme);
       } catch (e) {}
     }
+    applyAccent(theme);
     if (themeMeta) themeMeta.setAttribute("content", colors[theme]);
     if (themeToggle) {
       var next = theme === "dark" ? "light" : "dark";
