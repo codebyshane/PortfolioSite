@@ -1,4 +1,53 @@
 (function () {
+  var lab = document.querySelector(".lab");
+  var track = document.querySelector(".lab-track");
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  if (!lab || !track || reduce.matches) return;
+
+  var running = false;
+  var wait = 7 * 60 * 1000;
+
+  function startRun() {
+    if (running) return;
+    running = true;
+    lab.style.setProperty(
+      "--lab-run",
+      Math.max(track.clientWidth + 80, 160) + "px"
+    );
+    lab.classList.add("is-running");
+  }
+
+  function run() {
+    if (document.hidden) {
+      var onVis = function () {
+        if (!document.hidden) {
+          document.removeEventListener("visibilitychange", onVis);
+          startRun();
+        }
+      };
+      document.addEventListener("visibilitychange", onVis);
+      return;
+    }
+    startRun();
+  }
+
+  lab.addEventListener("animationend", function (event) {
+    if (event.animationName !== "lab-cross") return;
+    lab.classList.remove("is-running");
+    running = false;
+  });
+
+  function schedule() {
+    window.setTimeout(function () {
+      run();
+      schedule();
+    }, wait);
+  }
+
+  schedule();
+})();
+
+(function () {
   var navToggle = document.querySelector(".nav-toggle");
   var nav = document.getElementById("site-nav");
   if (!navToggle || !nav) return;

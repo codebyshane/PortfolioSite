@@ -186,6 +186,28 @@
   [data-theme="dark"] {
     animation: none;
   }
+
+  .btn,
+  .theme-toggle,
+  .nav-toggle {
+    transition: background-color 0.15s ease, border-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .btn:hover,
+  .btn:active,
+  .theme-toggle:hover,
+  .theme-toggle:active,
+  .nav-toggle:hover,
+  .nav-toggle:active {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn::after,
+  .lab-track {
+    display: none;
+  }
 }
 
 *,
@@ -360,12 +382,26 @@ p:last-child {
   background: var(--card);
   color: var(--text);
   cursor: pointer;
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.45, 0.64, 1),
+    box-shadow 0.22s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
 }
 
 .theme-toggle:hover,
 .nav-toggle:hover {
   border-color: var(--accent);
   color: var(--accent);
+  transform: translateY(-3px) scale(1.06);
+  box-shadow: 0 8px 16px rgba(22, 21, 19, 0.1);
+}
+
+.theme-toggle:active,
+.nav-toggle:active {
+  transform: translateY(1px) scale(0.94);
+  transition-duration: 0.08s;
 }
 
 [data-theme="light"] .icon-sun,
@@ -492,6 +528,45 @@ p:last-child {
   font-size: 0.95rem;
   text-decoration: none;
   cursor: pointer;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.45, 0.64, 1),
+    box-shadow 0.22s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.btn:hover {
+  transform: translateY(-3px) scale(1.04);
+}
+
+.btn:active {
+  transform: translateY(1px) scale(0.96);
+  box-shadow: none;
+  transition-duration: 0.08s;
+}
+
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: -20% -40%;
+  background: linear-gradient(
+    105deg,
+    transparent 42%,
+    rgb(255 255 255 / 0.3) 50%,
+    transparent 58%
+  );
+  transform: translateX(-80%);
+  transition: transform 0.55s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.btn:hover::after {
+  transform: translateX(80%);
 }
 
 .btn--primary {
@@ -502,6 +577,11 @@ p:last-child {
 .btn--primary:hover {
   background: var(--accent-hover);
   color: var(--btn-fg);
+  box-shadow: 0 12px 24px rgb(22 21 19 / 0.18);
+}
+
+[data-theme="dark"] .btn--primary:hover {
+  box-shadow: 0 12px 28px rgb(0 0 0 / 0.5);
 }
 
 .btn--ghost {
@@ -510,9 +590,19 @@ p:last-child {
   color: var(--text);
 }
 
+.btn--ghost::after {
+  background: linear-gradient(
+    105deg,
+    transparent 42%,
+    rgb(255 255 255 / 0.2) 50%,
+    transparent 58%
+  );
+}
+
 .btn--ghost:hover {
   border-color: var(--accent);
   color: var(--accent);
+  box-shadow: 0 10px 20px rgba(22, 21, 19, 0.1);
 }
 
 .text-link {
@@ -608,6 +698,87 @@ p:last-child {
   padding-top: clamp(2.75rem, 7vw, 4.5rem);
   padding-bottom: clamp(2.75rem, 7vw, 4.5rem);
   border-top: 1px solid var(--border);
+}
+
+.audience {
+  position: relative;
+}
+
+.lab-track {
+  position: absolute;
+  top: -0.72rem;
+  left: 0;
+  right: 0;
+  height: 1.35rem;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 2;
+}
+
+.lab {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2.75rem;
+  height: auto;
+  overflow: visible;
+  visibility: hidden;
+  transform: translateX(-8rem);
+  filter: drop-shadow(0 1px 1.5px rgb(22 21 19 / 0.35));
+}
+
+.lab.is-running {
+  visibility: visible;
+  animation: lab-cross 5.2s linear forwards;
+}
+
+.lab.is-running .lab__leg--front {
+  animation: lab-leg 0.2s ease-in-out infinite alternate;
+}
+
+.lab.is-running .lab__leg--back {
+  animation: lab-leg 0.2s ease-in-out infinite alternate-reverse;
+}
+
+.lab__leg {
+  transform-box: fill-box;
+  transform-origin: top center;
+}
+
+.lab__tail {
+  transform-box: fill-box;
+  transform-origin: right center;
+}
+
+.lab.is-running .lab__tail {
+  animation: lab-tail 0.26s ease-in-out infinite alternate;
+}
+
+@keyframes lab-cross {
+  from {
+    transform: translateX(-8rem);
+  }
+  to {
+    transform: translateX(var(--lab-run, 100%));
+  }
+}
+
+@keyframes lab-leg {
+  from {
+    transform: rotate(-18deg);
+  }
+  to {
+    transform: rotate(22deg);
+  }
+}
+
+@keyframes lab-tail {
+  from {
+    transform: rotate(-12deg);
+  }
+  to {
+    transform: rotate(18deg);
+  }
 }
 
 .section__intro {
