@@ -24,6 +24,10 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preload" as="image" href="images/me.jpeg" fetchpriority="high" />
     <link rel="stylesheet" href="assets/css/styles.css" />
+    <script
+      src="https://kit.fontawesome.com/59594389ff.js"
+      crossorigin="anonymous"
+    ></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -90,10 +94,18 @@
             tools you use every day.
           </p>
           <p class="hero__actions">
-            <a class="btn btn--primary" href="mailto:hello@shaneferguson.dev"
-              >Email Shane</a
-            >
-            <a class="btn btn--ghost" href="#work">See the work</a>
+            <a class="btn btn--primary" href="mailto:hello@shaneferguson.dev">
+              <span class="btn__label">Email Shane</span>
+              <span class="btn__icon" aria-hidden="true">
+                <i class="fa-regular fa-envelope"></i>
+              </span>
+            </a>
+            <a class="btn btn--ghost" href="#work">
+              <span class="btn__label">See the work</span>
+              <span class="btn__icon" aria-hidden="true">
+                <i class="fa-regular fa-table-cells"></i>
+              </span>
+            </a>
           </p>
         </div>
         <div class="hero__portrait">
@@ -108,89 +120,27 @@
       </section>
 
       <section id="audience" class="section audience" aria-labelledby="audience-title">
-        <div class="lab-track" aria-hidden="true">
-          <svg
-            class="lab"
-            viewBox="0 0 88 40"
-            width="44"
-            height="20"
-            focusable="false"
-          >
-            <g fill="#5c3218">
-              <path
-                class="lab__tail"
-                d="M22 20c-8-1-14-8-16-14 6 3 12 6 16 12z"
-              />
-              <ellipse cx="44" cy="20" rx="18" ry="9" />
-              <ellipse cx="66" cy="16" rx="10" ry="8" />
-              <ellipse cx="76" cy="19" rx="6.2" ry="4.2" />
-              <ellipse
-                cx="62"
-                cy="20"
-                rx="3.6"
-                ry="6.4"
-                fill="#3e2212"
-              />
-              <ellipse cx="81.6" cy="18.6" rx="1.6" ry="1.2" fill="#1a120c" />
-              <circle cx="69.2" cy="13.4" r="1.15" fill="#1a120c" />
-            </g>
-            <g fill="#3e2212">
-              <rect
-                class="lab__leg lab__leg--back"
-                x="32"
-                y="26"
-                width="3"
-                height="11"
-                rx="1.4"
-              />
-              <rect
-                class="lab__leg lab__leg--back"
-                x="39"
-                y="26"
-                width="3"
-                height="11"
-                rx="1.4"
-              />
-              <rect
-                class="lab__leg lab__leg--front"
-                x="50"
-                y="26"
-                width="3"
-                height="11"
-                rx="1.4"
-              />
-              <rect
-                class="lab__leg lab__leg--front"
-                x="57"
-                y="26"
-                width="3"
-                height="11"
-                rx="1.4"
-              />
-            </g>
-          </svg>
-        </div>
         <div class="section__intro">
           <p class="kicker">Who it’s for</p>
           <h2 id="audience-title">If you run a small business around here, I can help you ship.</h2>
         </div>
         <ul class="audience-grid">
           <li>
-            <h3>Web presence</h3>
+            <h3><i class="fa-regular fa-laptop icon" aria-hidden="true"></i> Web presence</h3>
             <p>
               A landing page or site that looks professional and explains what
               you do — without the template clutter.
             </p>
           </li>
           <li>
-            <h3>Productivity tools</h3>
+            <h3><i class="fa-regular fa-gears icon" aria-hidden="true"></i> Productivity tools</h3>
             <p>
               Custom apps for the work behind the scenes: schedules, bookings,
               household or shop operations.
             </p>
           </li>
           <li>
-            <h3>A second set of eyes</h3>
+            <h3><i class="fa-regular fa-eye icon" aria-hidden="true"></i> A second set of eyes</h3>
             <p>
               Code review, quality control, and a clear report when you need
               advice — not another guess.
@@ -210,21 +160,21 @@
         </div>
         <ol class="service-list">
           <li>
-            <h3>Code</h3>
+            <h3><i class="fa-regular fa-code icon" aria-hidden="true"></i> Code</h3>
             <p>
               Full-stack development from the ground up. I build what your
               customers see — and the application behind it.
             </p>
           </li>
           <li>
-            <h3>Manage</h3>
+            <h3><i class="fa-regular fa-list-check icon" aria-hidden="true"></i> Manage</h3>
             <p>
               Operations and quality control for the technical side of your
               business, so things keep running efficiently.
             </p>
           </li>
           <li>
-            <h3>Consult</h3>
+            <h3><i class="fa-regular fa-comments icon" aria-hidden="true"></i> Consult</h3>
             <p>
               A second opinion on your code: I’ll review it and send a full
               report of findings and suggestions.
@@ -272,7 +222,7 @@
                   class="text-link"
                   href="https://countygolf.com"
                   rel="noopener noreferrer"
-                  >Visit site</a
+                  >Visit site <i class="fa-regular fa-arrow-up-right-from-square icon" aria-hidden="true"></i></a
                 >
               </div>
             </article>
@@ -305,7 +255,7 @@
                   class="text-link"
                   href="https://surgipros.com"
                   rel="noopener noreferrer"
-                  >Visit site</a
+                  >Visit site <i class="fa-regular fa-arrow-up-right-from-square icon" aria-hidden="true"></i></a
                 >
               </div>
             </article>
@@ -335,7 +285,7 @@
                   class="text-link"
                   href="https://hookemcharters.onrender.com"
                   rel="noopener noreferrer"
-                  >Visit site</a
+                  >Visit site <i class="fa-regular fa-arrow-up-right-from-square icon" aria-hidden="true"></i></a
                 >
               </div>
             </article>
@@ -352,7 +302,7 @@
                   src="images/work-fstop.jpg"
                   width="1280"
                   height="800"
-                  alt="f/stop Photography gallery with a large sunset image and thumbnail grid"
+                  alt="f/stop Photography homepage with a Laguna Sunset opening frame"
                   loading="lazy"
                   decoding="async"
                 />
@@ -365,7 +315,7 @@
                   class="text-link"
                   href="https://fstopphotography.onrender.com"
                   rel="noopener noreferrer"
-                  >Visit site</a
+                  >Visit site <i class="fa-regular fa-arrow-up-right-from-square icon" aria-hidden="true"></i></a
                 >
               </div>
             </article>
@@ -377,8 +327,12 @@
             class="btn btn--ghost"
             href="https://github.com/codebyshane"
             rel="noopener noreferrer"
-            >See more on GitHub</a
           >
+            <span class="btn__label">See more on GitHub</span>
+            <span class="btn__icon" aria-hidden="true">
+              <i class="fa-brands fa-github"></i>
+            </span>
+          </a>
         </p>
       </section>
 
@@ -393,35 +347,41 @@
             email me and we’ll figure it out, including a call if that’s easier.
           </p>
           <p>
-            <a class="btn btn--primary" href="mailto:hello@shaneferguson.dev"
-              >Email Shane</a
-            >
+            <a class="btn btn--primary" href="mailto:hello@shaneferguson.dev">
+              <span class="btn__label">Email Shane</span>
+              <span class="btn__icon" aria-hidden="true">
+                <i class="fa-regular fa-envelope"></i>
+              </span>
+            </a>
           </p>
         </div>
       </section>
     </main>
 
     <footer class="site-footer">
+      <div class="shore" aria-hidden="true">
+        <canvas class="lab" width="32" height="16"></canvas>
+        <canvas class="mullet" width="160" height="96"></canvas>
+      </div>
       <div class="site-footer__inner">
         <div class="site-footer__top">
-          <p class="site-footer__brand">Shane Ferguson · Tampa Bay</p>
+          <div class="site-footer__brand-row">
+            <div class="lava-lamp" aria-hidden="true">
+              <span class="lava-lamp__glass">
+                <span class="lava-lamp__blob lava-lamp__blob--a"></span>
+                <span class="lava-lamp__blob lava-lamp__blob--b"></span>
+                <span class="lava-lamp__blob lava-lamp__blob--c"></span>
+              </span>
+            </div>
+            <p class="site-footer__brand">Shane Ferguson · Tampa Bay</p>
+          </div>
           <ul class="socials">
             <li>
               <a
                 href="https://github.com/codebyshane"
                 rel="noopener noreferrer"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                  width="20"
-                  height="20"
-                >
-                  <path
-                    fill="currentColor"
-                    d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.1-1.47-1.1-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.36 1.09 2.94.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.95 0-1.1.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 6.8c.85 0 1.71.11 2.51.32 1.9-1.29 2.74-1.02 2.74-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.86v2.76c0 .26.18.58.69.48A10 10 0 0 0 12 2z"
-                  />
-                </svg>
+                <i class="fa-brands fa-github" aria-hidden="true"></i>
                 <span>GitHub</span>
               </a>
             </li>
