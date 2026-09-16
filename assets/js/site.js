@@ -349,8 +349,9 @@
 
   var BG_EDGE = [48, 20, 72];
   var BG_MID = [92, 36, 130];
-  var LAVA_LO = [255, 210, 70];
+  var LAVA_LO = [255, 214, 64];
   var LAVA_HI = [255, 110, 40];
+  var LAVA_CORE = [255, 224, 96];
 
   var instances = lamps
     .map(function (lamp) {
@@ -438,15 +439,29 @@
     return [r * 255, g * 255, b * 255];
   }
 
-  // Brand-colored Lava Lite: wax = accent; liquid = classic companion by hue family.
+  // Classic companion liquid by wax hue family.
   function companionLiquidHue(gooHue) {
     var h = ((gooHue % 360) + 360) % 360;
-    // Red / orange / yellow / green / teal → purple liquid
-    if (h < 195 || h >= 340) return 288;
-    // Blue → warm amber liquid
-    if (h < 255) return 36;
-    // Purple / pink → teal–blue liquid
-    return 198;
+    if (h < 195 || h >= 340) return 288; // warm / teal → purple
+    if (h < 255) return 36; // blue → amber
+    return 198; // purple / pink → teal-blue
+  }
+
+  // Punch accent into glowing wax — same contrast trick as gold-on-purple.
+  function waxFromAccent(accent, isDark) {
+    var hsl = rgbToHsl(accent[0], accent[1], accent[2]);
+    var s = Math.max(hsl[1], isDark ? 0.72 : 0.8);
+    var l = hsl[2];
+    if (isDark) {
+      l = Math.min(0.76, Math.max(0.58, l < 0.45 ? 0.64 : l));
+    } else if (l > 0.72) {
+      l = 0.48;
+    } else if (l < 0.28) {
+      l = 0.4;
+    } else {
+      l = Math.min(0.5, Math.max(0.36, l));
+    }
+    return hslToRgb(hsl[0], s, l);
   }
 
   function readPalette() {
@@ -459,31 +474,32 @@
     if (!accent) return;
 
     var isDark = lum(bg) < 128;
-    var accentLum = lum(accent);
     var hsl = rgbToHsl(accent[0], accent[1], accent[2]);
     var liqHue = companionLiquidHue(hsl[0]);
 
-    // Wax locked to button accent; hover + warmth for the hot core.
-    LAVA_HI = accent.slice();
-    LAVA_LO = mix(hover, [255, 244, 210], 0.22);
-    if (accentLum < 50) {
-      // Near-black accents still need a readable hot highlight.
-      LAVA_HI = mix(accent, hover, 0.35);
-      LAVA_LO = mix(hover, [255, 236, 200], 0.5);
-    } else if (accentLum > 215) {
-      LAVA_LO = mix(hover, [255, 255, 255], 0.2);
-    }
+    // Accent-colored wax body + always-on gold molten core.
+    LAVA_HI = waxFromAccent(accent, isDark);
+    LAVA_LO = mix(waxFromAccent(hover, isDark), [255, 236, 140], 0.4);
+    LAVA_CORE = [255, 224, 96];
 
     if (isDark) {
-      // Jewel-tone companion — deep but not charcoal.
-      BG_EDGE = hslToRgb(liqHue, 0.48, 0.2);
-      BG_MID = hslToRgb(liqHue, 0.52, 0.34);
+      BG_EDGE = hslToRgb(liqHue, 0.52, 0.14);
+      BG_MID = hslToRgb(liqHue, 0.56, 0.24);
     } else {
-      // Milky translucent companion — pale wash, not a mid-tone slab.
-      var milky = hslToRgb(liqHue, 0.22, 0.9);
-      var cream = [250, 246, 238];
-      BG_EDGE = mix(cream, milky, 0.45);
-      BG_MID = mix(cream, milky, 0.7);
+      var milky = hslToRgb(liqHue, 0.12, 0.94);
+      var cream = [252, 249, 244];
+      BG_EDGE = mix(cream, milky, 0.3);
+      BG_MID = mix(cream, milky, 0.5);
+    }
+
+    var waxL = lum(LAVA_HI);
+    var liqL = (lum(BG_EDGE) + lum(BG_MID)) / 2;
+    if (isDark && waxL < liqL + 60) {
+      LAVA_HI = mix(LAVA_HI, [255, 255, 255], 0.3);
+      LAVA_LO = mix(LAVA_LO, LAVA_CORE, 0.4);
+    } else if (!isDark && Math.abs(waxL - liqL) < 50) {
+      LAVA_HI = mix(LAVA_HI, [36, 28, 18], 0.2);
+      LAVA_LO = mix(LAVA_LO, LAVA_CORE, 0.45);
     }
   }
 
@@ -555,20 +571,20 @@
         var rim = Math.pow(Math.max(0, Math.min(1, 1 - Math.abs(dist) / 0.05)), 1.2) * fill;
         var glow = Math.pow(Math.max(0, Math.min(1, (-dist + 0.035) / 0.11)), 1.35) * lidFade;
 
-        // Cooler rim (pull toward liquid), hotter core (pull toward highlight).
-        var waxR = lr + (bgR - lr) * rim * 0.18;
-        var waxG = lg + (bgG - lg) * rim * 0.18;
-        var waxB = lb + (bgB - lb) * rim * 0.18;
-        waxR = waxR + (LAVA_LO[0] - waxR) * core * 0.55;
-        waxG = waxG + (LAVA_LO[1] - waxG) * core * 0.55;
-        waxB = waxB + (LAVA_LO[2] - waxB) * core * 0.55;
+        // Accent rim + gold molten core (why yellow/gold wax reads on purple liquid).
+        var waxR = lr + (bgR - lr) * rim * 0.1;
+        var waxG = lg + (bgG - lg) * rim * 0.1;
+        var waxB = lb + (bgB - lb) * rim * 0.1;
+        waxR = waxR + (LAVA_CORE[0] - waxR) * core * 0.78;
+        waxG = waxG + (LAVA_CORE[1] - waxG) * core * 0.78;
+        waxB = waxB + (LAVA_CORE[2] - waxB) * core * 0.78;
 
         var r = bgR + (waxR - bgR) * fill;
         var g = bgG + (waxG - bgG) * fill;
         var bl = bgB + (waxB - bgB) * fill;
-        r = Math.min(255, r + glow * 38 + core * 28);
-        g = Math.min(255, g + glow * 26 + core * 16);
-        bl = Math.min(255, bl + glow * 14 + core * 8);
+        r = Math.min(255, r + glow * 45 + core * 36);
+        g = Math.min(255, g + glow * 32 + core * 24);
+        bl = Math.min(255, bl + glow * 12 + core * 6);
 
         data[i++] = clampByte(r);
         data[i++] = clampByte(g);
