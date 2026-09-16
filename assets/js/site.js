@@ -334,7 +334,7 @@
   });
 })();
 
-/* Lava lamp fluid — metaball smooth-union motion inspired by brybrant/lava-lamp,
+/* Lava lamp fluid — 2D take on brybrant/lava-lamp metaball smooth-unions,
    clipped by DinPX/Lava-Lamp contents + cover shell.
    Brand-colored Lava Lite: wax tracks accent; liquid is a classic companion hue. */
 (function () {
@@ -342,9 +342,13 @@
   if (!lamps.length) return;
 
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-  var BALLSPEED = 0.48;
+  // brybrant/lava-lamp motion (ballspeed + sphere paths); radii fit the bottle.
+  var BALLSPEED = 0.125;
   var TOP = 0.1;
   var BOTTOM = 0.74;
+  var WORLD_Y = 6.5;
+  var WORLD_X = 12;
+  var WORLD_R = 14;
   var K = 0.1;
 
   var BG_EDGE = [48, 20, 72];
@@ -352,6 +356,7 @@
   var LAVA_LO = [126, 212, 203];
   var LAVA_HI = [10, 88, 82];
   var LAVA_CORE = [200, 230, 220];
+  var LIGHT = [-0.7, 0.45];
 
   var instances = lamps
     .map(function (lamp) {
@@ -376,6 +381,10 @@
     return Math.max(0, Math.min(255, n | 0));
   }
 
+  function clamp01(n) {
+    return Math.max(0, Math.min(1, n));
+  }
+
   function mix(a, b, t) {
     return [
       a[0] + (b[0] - a[0]) * t,
@@ -385,7 +394,20 @@
   }
 
   function parseRgb(str) {
-    var m = String(str).match(/[\d.]+/g);
+    var s = String(str).trim();
+    var hex = s.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (hex) {
+      var h = hex[1];
+      if (h.length === 3) {
+        h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+      }
+      return [
+        parseInt(h.slice(0, 2), 16),
+        parseInt(h.slice(2, 4), 16),
+        parseInt(h.slice(4, 6), 16)
+      ];
+    }
+    var m = s.match(/[\d.]+/g);
     if (!m || m.length < 3) return null;
     return [Number(m[0]), Number(m[1]), Number(m[2])];
   }
@@ -439,15 +461,13 @@
     return [r * 255, g * 255, b * 255];
   }
 
-  // Classic companion liquid by wax hue family.
   function companionLiquidHue(gooHue) {
     var h = ((gooHue % 360) + 360) % 360;
-    if (h < 195 || h >= 340) return 288; // warm / teal → purple
-    if (h < 255) return 36; // blue → amber
-    return 198; // purple / pink → teal-blue
+    if (h < 195 || h >= 340) return 288;
+    if (h < 255) return 36;
+    return 198;
   }
 
-  // Keep wax close to accent; only nudge lightness so it still pops on liquid.
   function waxFromAccent(accent, isDark) {
     var hsl = rgbToHsl(accent[0], accent[1], accent[2]);
     var s = Math.min(1, Math.max(hsl[1], isDark ? 0.55 : 0.6));
@@ -476,10 +496,9 @@
     var hsl = rgbToHsl(accent[0], accent[1], accent[2]);
     var liqHue = companionLiquidHue(hsl[0]);
 
-    // Body = accent; highlight = accent-hover; tiny warm spark only in the core.
     LAVA_HI = waxFromAccent(accent, isDark);
     LAVA_LO = waxFromAccent(hover, isDark);
-    LAVA_CORE = mix(LAVA_LO, [255, 248, 230], 0.35);
+    LAVA_CORE = mix(LAVA_LO, [255, 248, 230], 0.28);
 
     if (isDark) {
       BG_EDGE = hslToRgb(liqHue, 0.52, 0.14);
@@ -501,13 +520,87 @@
     }
   }
 
-  function smin(a, b, k) {
-    var h = Math.max(k - Math.abs(a - b), 0) / k;
-    return Math.min(a, b) - h * h * k * 0.25;
+  // brybrant opSmoothUnion
+  function opSmoothUnion(d1, d2, k) {
+    var h = clamp01(0.5 + (0.5 * (d2 - d1)) / k);
+    return d2 * (1 - h) + d1 * h - k * h * (1 - h);
   }
 
   function sphere(px, py, cx, cy, r) {
     return Math.hypot(px - cx, py - cy) - r;
+  }
+
+  // Map brybrant world y (up) / z (side) into bottle UV (by down, ux across).
+  function mapY(y) {
+    return 0.5 - y / WORLD_Y;
+  }
+
+  function mapX(z) {
+    return 0.5 + z / WORLD_X;
+  }
+
+  function mapR(r) {
+    return r / WORLD_R;
+  }
+
+  // brybrant getDist — same spheres + planes, flattened to bottle UV.
+  function getDist(ux, by, time) {
+    // Floor / ceiling wax — bottom pool more visible; top film kept thin.
+    var botPlane = Math.max(0.78 - by, by - 1.05);
+    var topPlane = Math.max(by - 0.045, -0.02 - by);
+
+    var sphereMiddle = sphere(
+      ux,
+      by,
+      mapX(Math.sin(time)),
+      mapY(Math.sin(time + 2) * 3),
+      mapR(1.55)
+    );
+    var sphereRight = sphere(
+      ux,
+      by,
+      mapX(3.6 + Math.cos(time)),
+      mapY(Math.sin(time) * 2),
+      mapR(1.35)
+    );
+    var sphereLeft = sphere(
+      ux,
+      by,
+      mapX(-3.6 - Math.cos(time)),
+      mapY(Math.sin(time + 4) * 2),
+      mapR(1.35)
+    );
+    var sphereBackRight = sphere(
+      ux,
+      by,
+      mapX(2.2 - Math.cos(time * 0.75)),
+      mapY(Math.sin(time * 0.75 + 6) * 2),
+      mapR(1.75)
+    );
+    var sphereBackLeft = sphere(
+      ux,
+      by,
+      mapX(-2.2 + Math.cos(time * 0.75 + 3)),
+      mapY(Math.sin(time * 0.75 + 9) * 2),
+      mapR(1.75)
+    );
+
+    var dist = opSmoothUnion(botPlane, topPlane, K);
+    dist = opSmoothUnion(dist, sphereMiddle, K);
+    dist = opSmoothUnion(dist, sphereRight, K);
+    dist = opSmoothUnion(dist, sphereLeft, K);
+    dist = opSmoothUnion(dist, sphereBackRight, K);
+    dist = opSmoothUnion(dist, sphereBackLeft, K);
+    return dist;
+  }
+
+  function sampleNormal(ux, by, time) {
+    var e = 0.01;
+    var d = getDist(ux, by, time);
+    var nx = getDist(ux + e, by, time) - d;
+    var ny = getDist(ux, by + e, time) - d;
+    var len = Math.hypot(nx, ny) || 1;
+    return [nx / len, ny / len];
   }
 
   var paletteAt = -1;
@@ -517,78 +610,54 @@
     var H = inst.h;
     var data = inst.img.data;
     var time = t * BALLSPEED;
-    // Heater pool + separate rising blobs with soft merge necks.
-    var blobs = [
-      { x: 0.5, y: 0.82 + Math.sin(time * 0.85) * 0.05, r: 0.22 },
-      { x: 0.5, y: 0.48 + Math.sin(time + 2.1) * 0.28, r: 0.135 },
-      { x: 0.3, y: 0.52 + Math.sin(time * 0.92 + 0.6) * 0.25, r: 0.105 },
-      { x: 0.7, y: 0.5 + Math.sin(time + 4.1) * 0.23, r: 0.105 },
-      { x: 0.4, y: 0.46 + Math.sin(time * 0.68 + 6.2) * 0.22, r: 0.12 },
-      { x: 0.6, y: 0.5 + Math.sin(time * 0.68 + 9.1) * 0.21, r: 0.115 }
-    ];
-
+    // Soft metaball rim — wider than a pixel so merges read as goo.
+    var soft = Math.max(0.045, mapR(0.7));
     var i = 0;
     var y;
     var x;
+
     for (y = 0; y < H; y++) {
       var uy = y / (H - 1);
       var by = (uy - TOP) / (BOTTOM - TOP);
       for (x = 0; x < W; x++) {
         var ux = x / (W - 1);
-
-        // Bottom wax pool (heater) + rising metaballs.
-        var dist = 0.84 - by;
-        dist = smin(dist, by - 0.012, 0.05);
-        var b;
-        for (b = 0; b < blobs.length; b++) {
-          var blob = blobs[b];
-          dist = smin(dist, sphere(ux, by, blob.x, blob.y, blob.r), K);
-        }
+        var dist = getDist(ux, by, time);
 
         var edgeX = Math.abs(ux - 0.5) * 2;
-        var bgR = BG_EDGE[0] + (BG_MID[0] - BG_EDGE[0]) * (1 - edgeX * 0.85);
-        var bgG = BG_EDGE[1] + (BG_MID[1] - BG_EDGE[1]) * (1 - edgeX * 0.85);
-        var bgB = BG_EDGE[2] + (BG_MID[2] - BG_EDGE[2]) * (1 - edgeX * 0.85);
+        var bg = [
+          BG_EDGE[0] + (BG_MID[0] - BG_EDGE[0]) * (1 - edgeX * 0.85),
+          BG_EDGE[1] + (BG_MID[1] - BG_EDGE[1]) * (1 - edgeX * 0.85),
+          BG_EDGE[2] + (BG_MID[2] - BG_EDGE[2]) * (1 - edgeX * 0.85)
+        ];
 
-        // Soft glass glint so the vessel reads as liquid in a bottle.
-        var glint = Math.exp(-Math.pow((ux - 0.28) / 0.1, 2)) * 0.12 * (1 - by * 0.35);
-        bgR = Math.min(255, bgR + glint * 70);
-        bgG = Math.min(255, bgG + glint * 70);
-        bgB = Math.min(255, bgB + glint * 65);
+        var field = clamp01(0.5 - dist / soft);
+        field = field * field * (3 - 2 * field);
 
-        // Hotter wax near the base; cooler rims, hotter cores.
-        var heat = Math.max(0, Math.min(1, 1 - by));
-        var lr = LAVA_LO[0] + (LAVA_HI[0] - LAVA_LO[0]) * (1 - heat * 0.65);
-        var lg = LAVA_LO[1] + (LAVA_HI[1] - LAVA_LO[1]) * (1 - heat * 0.65);
-        var lb = LAVA_LO[2] + (LAVA_HI[2] - LAVA_LO[2]) * (1 - heat * 0.65);
+        var n = sampleNormal(ux, by, time);
+        var diff = n[0] * LIGHT[0] + n[1] * LIGHT[1];
+        // Soft lit wax body (brybrant-style shade), kept on the wax not the liquid.
+        var shade = clamp01(0.55 + diff * 0.45);
 
-        var lidFade = by < 0.06 ? by / 0.06 : 1;
-        var fill = (1 - Math.max(0, Math.min(1, (dist + 0.008) / 0.04))) * lidFade;
-        fill = Math.pow(Math.max(0, fill), 0.8);
-        // Tight hot spark — accent carries the blob, not a gold wash.
-        var core = Math.pow(Math.max(0, Math.min(1, (-dist + 0.008) / 0.045)), 2.4) * lidFade;
-        var rim = Math.pow(Math.max(0, Math.min(1, 1 - Math.abs(dist) / 0.05)), 1.2) * fill;
-        var glow = Math.pow(Math.max(0, Math.min(1, (-dist + 0.035) / 0.11)), 1.35) * lidFade;
+        var heat = clamp01(1 - by);
+        var lava = [
+          LAVA_LO[0] + (LAVA_HI[0] - LAVA_LO[0]) * (1 - heat * 0.3),
+          LAVA_LO[1] + (LAVA_HI[1] - LAVA_LO[1]) * (1 - heat * 0.3),
+          LAVA_LO[2] + (LAVA_HI[2] - LAVA_LO[2]) * (1 - heat * 0.3)
+        ];
+        var core = clamp01((-dist) / (soft * 1.25));
+        core = Math.pow(core, 1.5);
+        lava = mix(lava, LAVA_CORE, core * 0.28);
+        lava = [
+          lava[0] * (0.72 + shade * 0.4),
+          lava[1] * (0.72 + shade * 0.4),
+          lava[2] * (0.72 + shade * 0.4)
+        ];
 
-        var waxR = lr + (bgR - lr) * rim * 0.1;
-        var waxG = lg + (bgG - lg) * rim * 0.1;
-        var waxB = lb + (bgB - lb) * rim * 0.1;
-        waxR = waxR + (LAVA_CORE[0] - waxR) * core * 0.32;
-        waxG = waxG + (LAVA_CORE[1] - waxG) * core * 0.32;
-        waxB = waxB + (LAVA_CORE[2] - waxB) * core * 0.32;
+        var col = mix(bg, lava, field);
 
-        var r = bgR + (waxR - bgR) * fill;
-        var g = bgG + (waxG - bgG) * fill;
-        var bl = bgB + (waxB - bgB) * fill;
-        // Neutral lift so glow doesn't skew yellow.
-        var lift = glow * 28 + core * 18;
-        r = Math.min(255, r + lift);
-        g = Math.min(255, g + lift * 0.92);
-        bl = Math.min(255, bl + lift * 0.88);
-
-        data[i++] = clampByte(r);
-        data[i++] = clampByte(g);
-        data[i++] = clampByte(bl);
+        data[i++] = clampByte(col[0]);
+        data[i++] = clampByte(col[1]);
+        data[i++] = clampByte(col[2]);
         data[i++] = 255;
       }
     }
