@@ -349,9 +349,9 @@
 
   var BG_EDGE = [48, 20, 72];
   var BG_MID = [92, 36, 130];
-  var LAVA_LO = [255, 214, 64];
-  var LAVA_HI = [255, 110, 40];
-  var LAVA_CORE = [255, 224, 96];
+  var LAVA_LO = [126, 212, 203];
+  var LAVA_HI = [10, 88, 82];
+  var LAVA_CORE = [200, 230, 220];
 
   var instances = lamps
     .map(function (lamp) {
@@ -447,19 +447,18 @@
     return 198; // purple / pink → teal-blue
   }
 
-  // Punch accent into glowing wax — same contrast trick as gold-on-purple.
+  // Keep wax close to accent; only nudge lightness so it still pops on liquid.
   function waxFromAccent(accent, isDark) {
     var hsl = rgbToHsl(accent[0], accent[1], accent[2]);
-    var s = Math.max(hsl[1], isDark ? 0.72 : 0.8);
+    var s = Math.min(1, Math.max(hsl[1], isDark ? 0.55 : 0.6));
     var l = hsl[2];
     if (isDark) {
-      l = Math.min(0.76, Math.max(0.58, l < 0.45 ? 0.64 : l));
-    } else if (l > 0.72) {
-      l = 0.48;
-    } else if (l < 0.28) {
-      l = 0.4;
-    } else {
-      l = Math.min(0.5, Math.max(0.36, l));
+      if (l < 0.4) l = l * 0.35 + 0.52;
+      else if (l < 0.55) l = Math.min(0.68, l + 0.08);
+    } else if (l > 0.78) {
+      l = l * 0.55 + 0.22;
+    } else if (l < 0.22) {
+      l = 0.34;
     }
     return hslToRgb(hsl[0], s, l);
   }
@@ -477,10 +476,10 @@
     var hsl = rgbToHsl(accent[0], accent[1], accent[2]);
     var liqHue = companionLiquidHue(hsl[0]);
 
-    // Accent-colored wax body + always-on gold molten core.
+    // Body = accent; highlight = accent-hover; tiny warm spark only in the core.
     LAVA_HI = waxFromAccent(accent, isDark);
-    LAVA_LO = mix(waxFromAccent(hover, isDark), [255, 236, 140], 0.4);
-    LAVA_CORE = [255, 224, 96];
+    LAVA_LO = waxFromAccent(hover, isDark);
+    LAVA_CORE = mix(LAVA_LO, [255, 248, 230], 0.35);
 
     if (isDark) {
       BG_EDGE = hslToRgb(liqHue, 0.52, 0.14);
@@ -494,12 +493,11 @@
 
     var waxL = lum(LAVA_HI);
     var liqL = (lum(BG_EDGE) + lum(BG_MID)) / 2;
-    if (isDark && waxL < liqL + 60) {
-      LAVA_HI = mix(LAVA_HI, [255, 255, 255], 0.3);
-      LAVA_LO = mix(LAVA_LO, LAVA_CORE, 0.4);
-    } else if (!isDark && Math.abs(waxL - liqL) < 50) {
-      LAVA_HI = mix(LAVA_HI, [36, 28, 18], 0.2);
-      LAVA_LO = mix(LAVA_LO, LAVA_CORE, 0.45);
+    if (isDark && waxL < liqL + 50) {
+      LAVA_HI = mix(LAVA_HI, [255, 255, 255], 0.18);
+      LAVA_LO = mix(LAVA_LO, [255, 255, 255], 0.12);
+    } else if (!isDark && Math.abs(waxL - liqL) < 40) {
+      LAVA_HI = mix(LAVA_HI, [30, 28, 26], 0.12);
     }
   }
 
@@ -567,24 +565,26 @@
         var lidFade = by < 0.06 ? by / 0.06 : 1;
         var fill = (1 - Math.max(0, Math.min(1, (dist + 0.008) / 0.04))) * lidFade;
         fill = Math.pow(Math.max(0, fill), 0.8);
-        var core = Math.pow(Math.max(0, Math.min(1, (-dist + 0.015) / 0.07)), 2) * lidFade;
+        // Tight hot spark — accent carries the blob, not a gold wash.
+        var core = Math.pow(Math.max(0, Math.min(1, (-dist + 0.008) / 0.045)), 2.4) * lidFade;
         var rim = Math.pow(Math.max(0, Math.min(1, 1 - Math.abs(dist) / 0.05)), 1.2) * fill;
         var glow = Math.pow(Math.max(0, Math.min(1, (-dist + 0.035) / 0.11)), 1.35) * lidFade;
 
-        // Accent rim + gold molten core (why yellow/gold wax reads on purple liquid).
         var waxR = lr + (bgR - lr) * rim * 0.1;
         var waxG = lg + (bgG - lg) * rim * 0.1;
         var waxB = lb + (bgB - lb) * rim * 0.1;
-        waxR = waxR + (LAVA_CORE[0] - waxR) * core * 0.78;
-        waxG = waxG + (LAVA_CORE[1] - waxG) * core * 0.78;
-        waxB = waxB + (LAVA_CORE[2] - waxB) * core * 0.78;
+        waxR = waxR + (LAVA_CORE[0] - waxR) * core * 0.32;
+        waxG = waxG + (LAVA_CORE[1] - waxG) * core * 0.32;
+        waxB = waxB + (LAVA_CORE[2] - waxB) * core * 0.32;
 
         var r = bgR + (waxR - bgR) * fill;
         var g = bgG + (waxG - bgG) * fill;
         var bl = bgB + (waxB - bgB) * fill;
-        r = Math.min(255, r + glow * 45 + core * 36);
-        g = Math.min(255, g + glow * 32 + core * 24);
-        bl = Math.min(255, bl + glow * 12 + core * 6);
+        // Neutral lift so glow doesn't skew yellow.
+        var lift = glow * 28 + core * 18;
+        r = Math.min(255, r + lift);
+        g = Math.min(255, g + lift * 0.92);
+        bl = Math.min(255, bl + lift * 0.88);
 
         data[i++] = clampByte(r);
         data[i++] = clampByte(g);
