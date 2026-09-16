@@ -369,18 +369,23 @@
           decoding="async"
           draggable="false"
         />
-        <canvas class="mullet" width="220" height="130"></canvas>
+        <div class="mullet" aria-hidden="true"></div>
       </div>
       <div class="site-footer__inner">
         <div class="site-footer__top">
           <div class="site-footer__brand-row">
             <!-- Shell silhouette: DinPX/Lava-Lamp (MIT). Fluid: brybrant/lava-lamp metaballs. -->
-            <div class="lava-lamp" aria-hidden="true">
-              <div class="lava-lamp__vessel">
-                <canvas class="lava-lamp__fluid" width="60" height="150"></canvas>
-              </div>
-              <div class="lava-lamp__cover"></div>
-            </div>
+            <button
+              type="button"
+              class="lava-lamp lava-lamp--footer"
+              aria-label="Lava lamp — click to enlarge"
+              aria-pressed="false"
+            >
+              <span class="lava-lamp__vessel">
+                <canvas class="lava-lamp__fluid" width="72" height="180"></canvas>
+              </span>
+              <span class="lava-lamp__cover"></span>
+            </button>
             <p class="site-footer__brand">Shane Ferguson · Tampa Bay</p>
           </div>
           <ul class="socials">

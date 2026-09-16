@@ -843,11 +843,20 @@ h3 .icon {
 .mullet {
   position: absolute;
   left: 0;
-  bottom: -12px;
-  width: 220px;
-  height: 130px;
+  bottom: -2px;
+  width: 60px;
+  height: 48px;
   pointer-events: none;
   opacity: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background-image: url("../../images/pets/mullet-leap.png");
+  background-repeat: no-repeat;
+  /* 10 frames × 40×32 source → 1.5× display */
+  background-size: 600px 48px;
+  background-position: 0 0;
+  transform-origin: 50% 85%;
+  filter: drop-shadow(0 1px 0 rgb(22 21 19 / 0.25));
 }
 
 .section__intro {
@@ -1065,17 +1074,41 @@ h3 .icon {
 
 .lava-lamp {
   position: relative;
-  width: 0.85rem;
-  height: 2.125rem;
   flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   line-height: 0;
   color: var(--accent);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
   filter: drop-shadow(0 0 0.55px color-mix(in srgb, var(--text) 28%, transparent));
+  transition: transform 0.35s ease, filter 0.35s ease;
+}
+
+.lava-lamp:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.lava-lamp--footer {
+  width: 1.2rem;
+  height: 3rem;
+}
+
+.lava-lamp.is-focused {
+  z-index: 40;
+  transform: scale(3.4);
+  transform-origin: left center;
+  filter: drop-shadow(0 16px 28px color-mix(in srgb, var(--text) 22%, transparent));
 }
 
 .lava-lamp__vessel {
   position: absolute;
   inset: 0;
+  display: block;
   -webkit-mask-image: url("../../images/lava/contents.png");
   mask-image: url("../../images/lava/contents.png");
   -webkit-mask-size: 100% 100%;
@@ -1096,6 +1129,7 @@ h3 .icon {
 .lava-lamp__cover {
   position: absolute;
   inset: 0;
+  display: block;
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--card) 55%, var(--border) 45%) 0%,
@@ -1140,6 +1174,16 @@ h3 .icon {
     color-mix(in srgb, var(--text-muted) 42%, var(--border) 58%) 42%,
     color-mix(in srgb, var(--text) 72%, var(--border) 28%) 100%
   );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lava-lamp {
+    transition: none;
+  }
+
+  .lava-lamp.is-focused {
+    transform: none;
+  }
 }
 
 .socials {
