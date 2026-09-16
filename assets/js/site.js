@@ -334,29 +334,31 @@
   });
 })();
 
-/* Lava lamp fluid — 2D take on brybrant/lava-lamp metaball smooth-unions,
-   clipped by DinPX/Lava-Lamp contents + cover shell.
+/* Lava lamp fluid — 2D take on brybrant/lava-lamp (smooth-union metaballs,
+   soft lit field, ballspeed 0.125), clipped by DinPX/Lava-Lamp shell.
    Brand-colored Lava Lite: wax tracks accent; liquid is a classic companion hue. */
 (function () {
   var lamps = Array.prototype.slice.call(document.querySelectorAll(".lava-lamp"));
   if (!lamps.length) return;
 
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-  // brybrant/lava-lamp motion (ballspeed + sphere paths); radii fit the bottle.
+  // Exact brybrant ballspeed — slow, heavy goo.
   var BALLSPEED = 0.125;
   var TOP = 0.1;
   var BOTTOM = 0.74;
+  // Map brybrant world into the bottle; radii sized so necks form without a solid fill.
   var WORLD_Y = 6.5;
-  var WORLD_X = 12;
-  var WORLD_R = 14;
-  var K = 0.1;
+  var WORLD_X = 10.5;
+  var WORLD_R = 10.55;
+  var K = 1.15 / WORLD_R;
 
   var BG_EDGE = [48, 20, 72];
   var BG_MID = [92, 36, 130];
   var LAVA_LO = [126, 212, 203];
   var LAVA_HI = [10, 88, 82];
   var LAVA_CORE = [200, 230, 220];
-  var LIGHT = [-0.7, 0.45];
+  // brybrant lightpos (-30, 2) → left / slightly up in bottle UV.
+  var LIGHT = [-0.98, 0.12];
 
   var instances = lamps
     .map(function (lamp) {
@@ -498,16 +500,17 @@
 
     LAVA_HI = waxFromAccent(accent, isDark);
     LAVA_LO = waxFromAccent(hover, isDark);
-    LAVA_CORE = mix(LAVA_LO, [255, 248, 230], 0.28);
+    // Mild warm lift — brybrant uses HDR lava; keep accent readable.
+    LAVA_CORE = mix(LAVA_LO, [255, 250, 235], 0.32);
 
     if (isDark) {
       BG_EDGE = hslToRgb(liqHue, 0.52, 0.14);
       BG_MID = hslToRgb(liqHue, 0.56, 0.24);
     } else {
-      var milky = hslToRgb(liqHue, 0.12, 0.94);
+      var milky = hslToRgb(liqHue, 0.14, 0.93);
       var cream = [252, 249, 244];
-      BG_EDGE = mix(cream, milky, 0.3);
-      BG_MID = mix(cream, milky, 0.5);
+      BG_EDGE = mix(cream, milky, 0.35);
+      BG_MID = mix(cream, milky, 0.55);
     }
 
     var waxL = lum(LAVA_HI);
@@ -530,7 +533,6 @@
     return Math.hypot(px - cx, py - cy) - r;
   }
 
-  // Map brybrant world y (up) / z (side) into bottle UV (by down, ux across).
   function mapY(y) {
     return 0.5 - y / WORLD_Y;
   }
@@ -543,49 +545,50 @@
     return r / WORLD_R;
   }
 
-  // brybrant getDist — same spheres + planes, flattened to bottle UV.
+  // brybrant getDist — same spheres + planes, flattened into the bottle.
   function getDist(ux, by, time) {
-    // Floor / ceiling wax — bottom pool more visible; top film kept thin.
-    var botPlane = Math.max(0.78 - by, by - 1.05);
-    var topPlane = Math.max(by - 0.045, -0.02 - by);
+    // Bottom reservoir (visible) + thin top film — not fullscreen half-spaces.
+    var botPlane = Math.max(0.76 - by, by - 1.06);
+    var topPlane = Math.max(by - 0.035, -0.02 - by);
 
     var sphereMiddle = sphere(
       ux,
       by,
       mapX(Math.sin(time)),
       mapY(Math.sin(time + 2) * 3),
-      mapR(1.55)
+      mapR(1.5)
     );
     var sphereRight = sphere(
       ux,
       by,
-      mapX(3.6 + Math.cos(time)),
+      mapX(4 + Math.cos(time)),
       mapY(Math.sin(time) * 2),
-      mapR(1.35)
+      mapR(1.5)
     );
     var sphereLeft = sphere(
       ux,
       by,
-      mapX(-3.6 - Math.cos(time)),
+      mapX(-4 - Math.cos(time)),
       mapY(Math.sin(time + 4) * 2),
-      mapR(1.35)
+      mapR(1.5)
     );
     var sphereBackRight = sphere(
       ux,
       by,
-      mapX(2.2 - Math.cos(time * 0.75)),
+      mapX(2.5 - Math.cos(time * 0.75)),
       mapY(Math.sin(time * 0.75 + 6) * 2),
-      mapR(1.75)
+      mapR(2)
     );
     var sphereBackLeft = sphere(
       ux,
       by,
-      mapX(-2.2 + Math.cos(time * 0.75 + 3)),
+      mapX(-2.5 + Math.cos(time * 0.75 + 3)),
       mapY(Math.sin(time * 0.75 + 9) * 2),
-      mapR(1.75)
+      mapR(2)
     );
 
-    var dist = opSmoothUnion(botPlane, topPlane, K);
+    // brybrant unions everything with k = 1.0 → K in bottle space.
+    var dist = opSmoothUnion(botPlane, topPlane, K * 0.9);
     dist = opSmoothUnion(dist, sphereMiddle, K);
     dist = opSmoothUnion(dist, sphereRight, K);
     dist = opSmoothUnion(dist, sphereLeft, K);
@@ -594,11 +597,10 @@
     return dist;
   }
 
-  function sampleNormal(ux, by, time) {
-    var e = 0.01;
-    var d = getDist(ux, by, time);
-    var nx = getDist(ux + e, by, time) - d;
-    var ny = getDist(ux, by + e, time) - d;
+  // brybrant getNormal: normalize(origin - p) — soft radial lighting.
+  function sampleNormal(ux, by) {
+    var nx = 0.5 - ux;
+    var ny = 0.42 - by;
     var len = Math.hypot(nx, ny) || 1;
     return [nx / len, ny / len];
   }
@@ -610,8 +612,8 @@
     var H = inst.h;
     var data = inst.img.data;
     var time = t * BALLSPEED;
-    // Soft metaball rim — wider than a pixel so merges read as goo.
-    var soft = Math.max(0.045, mapR(0.7));
+    // Sharp isosurface like brybrant raymarch hits — thin AA only, no haze bloom.
+    var soft = Math.max(1.25 / W, mapR(0.22));
     var i = 0;
     var y;
     var x;
@@ -625,35 +627,34 @@
 
         var edgeX = Math.abs(ux - 0.5) * 2;
         var bg = [
-          BG_EDGE[0] + (BG_MID[0] - BG_EDGE[0]) * (1 - edgeX * 0.85),
-          BG_EDGE[1] + (BG_MID[1] - BG_EDGE[1]) * (1 - edgeX * 0.85),
-          BG_EDGE[2] + (BG_MID[2] - BG_EDGE[2]) * (1 - edgeX * 0.85)
+          BG_EDGE[0] + (BG_MID[0] - BG_EDGE[0]) * (1 - edgeX * 0.75),
+          BG_EDGE[1] + (BG_MID[1] - BG_EDGE[1]) * (1 - edgeX * 0.75),
+          BG_EDGE[2] + (BG_MID[2] - BG_EDGE[2]) * (1 - edgeX * 0.75)
         ];
 
+        // Steep coverage falloff → crisp blob silhouette.
         var field = clamp01(0.5 - dist / soft);
         field = field * field * (3 - 2 * field);
+        field = field * field;
 
-        var n = sampleNormal(ux, by, time);
+        var n = sampleNormal(ux, by);
+        // brybrant: col = (1 - diff) * 0.5
         var diff = n[0] * LIGHT[0] + n[1] * LIGHT[1];
-        // Soft lit wax body (brybrant-style shade), kept on the wax not the liquid.
-        var shade = clamp01(0.55 + diff * 0.45);
+        var shade = clamp01((1 - diff) * 0.5);
 
         var heat = clamp01(1 - by);
         var lava = [
-          LAVA_LO[0] + (LAVA_HI[0] - LAVA_LO[0]) * (1 - heat * 0.3),
-          LAVA_LO[1] + (LAVA_HI[1] - LAVA_LO[1]) * (1 - heat * 0.3),
-          LAVA_LO[2] + (LAVA_HI[2] - LAVA_LO[2]) * (1 - heat * 0.3)
+          LAVA_LO[0] + (LAVA_HI[0] - LAVA_LO[0]) * (1 - heat * 0.22),
+          LAVA_LO[1] + (LAVA_HI[1] - LAVA_LO[1]) * (1 - heat * 0.22),
+          LAVA_LO[2] + (LAVA_HI[2] - LAVA_LO[2]) * (1 - heat * 0.22)
         ];
-        var core = clamp01((-dist) / (soft * 1.25));
-        core = Math.pow(core, 1.5);
-        lava = mix(lava, LAVA_CORE, core * 0.28);
-        lava = [
-          lava[0] * (0.72 + shade * 0.4),
-          lava[1] * (0.72 + shade * 0.4),
-          lava[2] * (0.72 + shade * 0.4)
-        ];
+        var core = clamp01((-dist) / (soft * 1.8));
+        core = Math.pow(core, 1.4);
+        lava = mix(lava, LAVA_CORE, core * 0.3);
+        // Soft luminous body — keep accent hue, vary brightness like brybrant.
+        var lit = mix(mix(lava, bg, 0.18), mix(lava, LAVA_CORE, 0.22), shade);
 
-        var col = mix(bg, lava, field);
+        var col = mix(bg, lit, field);
 
         data[i++] = clampByte(col[0]);
         data[i++] = clampByte(col[1]);
