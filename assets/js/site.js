@@ -335,21 +335,22 @@
 })();
 
 /* Lava lamp fluid — metaball smooth-union motion inspired by brybrant/lava-lamp,
-   clipped by DinPX/Lava-Lamp contents + cover shell. Colors follow page accent. */
+   clipped by DinPX/Lava-Lamp contents + cover shell.
+   Goo tracks page accent; liquid is a traditional complementary lava-lamp pairing. */
 (function () {
   var lamps = Array.prototype.slice.call(document.querySelectorAll(".lava-lamp"));
   if (!lamps.length) return;
 
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-  var BALLSPEED = 0.5;
+  var BALLSPEED = 0.48;
   var TOP = 0.1;
   var BOTTOM = 0.74;
-  var K = 0.09;
+  var K = 0.1;
 
-  var BG_EDGE = [20, 40, 38];
-  var BG_MID = [40, 90, 84];
-  var LAVA_LO = [180, 230, 220];
-  var LAVA_HI = [10, 88, 82];
+  var BG_EDGE = [48, 20, 72];
+  var BG_MID = [92, 36, 130];
+  var LAVA_LO = [255, 210, 70];
+  var LAVA_HI = [255, 110, 40];
 
   var instances = lamps
     .map(function (lamp) {
@@ -382,10 +383,6 @@
     ];
   }
 
-  function shade(c, f) {
-    return [c[0] * f, c[1] * f, c[2] * f];
-  }
-
   function parseRgb(str) {
     var m = String(str).match(/[\d.]+/g);
     if (!m || m.length < 3) return null;
@@ -394,6 +391,63 @@
 
   function lum(c) {
     return c[0] * 0.299 + c[1] * 0.587 + c[2] * 0.114;
+  }
+
+  function rgbToHsl(r, g, b) {
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    var max = Math.max(r, g, b);
+    var min = Math.min(r, g, b);
+    var h = 0;
+    var s = 0;
+    var l = (max + min) / 2;
+    var d = max - min;
+    if (d > 0.0001) {
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+      else if (max === g) h = ((b - r) / d + 2) / 6;
+      else h = ((r - g) / d + 4) / 6;
+    }
+    return [h * 360, s, l];
+  }
+
+  function hue2rgb(p, q, t) {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  }
+
+  function hslToRgb(h, s, l) {
+    h = ((h % 360) + 360) % 360 / 360;
+    var r;
+    var g;
+    var b;
+    if (s < 0.0001) {
+      r = g = b = l;
+    } else {
+      var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      var p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1 / 3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1 / 3);
+    }
+    return [r * 255, g * 255, b * 255];
+  }
+
+  // Traditional Lava Lite pairings: warm wax ↔ purple liquid, cool wax ↔ amber/rose liquid, etc.
+  function traditionalLiquidHue(gooHue) {
+    var h = ((gooHue % 360) + 360) % 360;
+    if (h < 50 || h >= 340) return 285; // red–orange–yellow wax → purple liquid
+    if (h < 90) return 300; // chartreuse → magenta-purple
+    if (h < 170) return 295; // green–teal → classic purple
+    if (h < 210) return 38; // cyan–sky goo → warm amber liquid
+    if (h < 255) return 28; // blue goo → golden amber liquid
+    if (h < 310) return 195; // purple–violet goo → teal liquid
+    return 205; // pink–magenta goo → blue liquid
   }
 
   function readPalette() {
@@ -407,23 +461,26 @@
 
     var isDark = lum(bg) < 128;
     var accentLum = lum(accent);
+    var hsl = rgbToHsl(accent[0], accent[1], accent[2]);
+    var liqHue = traditionalLiquidHue(hsl[0]);
 
+    // Goo = button accent, with a hot wax highlight from accent-hover.
+    LAVA_HI = accent.slice();
+    LAVA_LO = mix(hover, [255, 236, 180], 0.28);
+    if (accentLum < 45) {
+      LAVA_HI = mix(accent, hover, 0.4);
+      LAVA_LO = mix(hover, [255, 230, 190], 0.45);
+    } else if (accentLum > 210) {
+      LAVA_LO = mix(hover, [255, 255, 255], 0.15);
+    }
+
+    // Liquid = traditional complement, tuned per theme for blob contrast.
     if (isDark) {
-      // Deep charcoal liquid so bright accent goo pops.
-      BG_EDGE = mix(bg, [6, 6, 5], 0.55);
-      BG_MID = mix(mix(bg, [10, 10, 9], 0.35), shade(accent, 0.2), 0.12);
-      LAVA_HI = mix(accent, [255, 255, 255], accentLum > 180 ? 0.12 : 0.28);
-      LAVA_LO = mix(hover, [255, 255, 255], 0.22);
+      BG_EDGE = hslToRgb(liqHue, 0.42, 0.14);
+      BG_MID = hslToRgb(liqHue, 0.5, 0.28);
     } else {
-      // Soft warm wax liquid — not black — with saturated accent goo.
-      BG_EDGE = mix([248, 244, 236], accent, 0.1);
-      BG_MID = mix([236, 228, 214], accent, 0.18);
-      LAVA_HI = accent.slice();
-      LAVA_LO = mix(hover, accent, 0.35);
-      if (accentLum < 40) {
-        LAVA_HI = mix(accent, hover, 0.45);
-        LAVA_LO = mix(hover, [255, 248, 236], 0.4);
-      }
+      BG_EDGE = hslToRgb(liqHue, 0.28, 0.78);
+      BG_MID = hslToRgb(liqHue, 0.34, 0.68);
     }
   }
 
@@ -443,12 +500,14 @@
     var H = inst.h;
     var data = inst.img.data;
     var time = t * BALLSPEED;
+    // Distinct rising/falling wax blobs — readable as lava, not a solid fill.
     var blobs = [
-      { x: 0.5, y: 0.5 + Math.sin(time + 2) * 0.28, r: 0.13 },
-      { x: 0.34, y: 0.5 + Math.sin(time) * 0.22, r: 0.1 },
-      { x: 0.66, y: 0.5 + Math.sin(time + 4) * 0.22, r: 0.1 },
-      { x: 0.42, y: 0.5 + Math.sin(time * 0.75 + 6) * 0.2, r: 0.12 },
-      { x: 0.58, y: 0.5 + Math.sin(time * 0.75 + 9) * 0.2, r: 0.12 }
+      { x: 0.5, y: 0.78 + Math.sin(time * 0.9 + 0.4) * 0.08, r: 0.2 },
+      { x: 0.5, y: 0.5 + Math.sin(time + 2) * 0.3, r: 0.14 },
+      { x: 0.32, y: 0.5 + Math.sin(time * 0.95) * 0.26, r: 0.11 },
+      { x: 0.68, y: 0.5 + Math.sin(time + 4.2) * 0.24, r: 0.11 },
+      { x: 0.42, y: 0.5 + Math.sin(time * 0.7 + 6) * 0.22, r: 0.13 },
+      { x: 0.58, y: 0.5 + Math.sin(time * 0.7 + 9) * 0.22, r: 0.12 }
     ];
 
     var i = 0;
@@ -459,8 +518,9 @@
       var by = (uy - TOP) / (BOTTOM - TOP);
       for (x = 0; x < W; x++) {
         var ux = x / (W - 1);
-        var dist = 0.92 - by;
-        dist = smin(dist, by - 0.02, 0.08);
+        // Fat bottom wax pool + rising spheres (brybrant-style smooth union).
+        var dist = 0.86 - by;
+        dist = smin(dist, by - 0.015, 0.06);
         var b;
         for (b = 0; b < blobs.length; b++) {
           var blob = blobs[b];
@@ -472,21 +532,25 @@
         var bgG = BG_EDGE[1] + (BG_MID[1] - BG_EDGE[1]) * (1 - edgeX);
         var bgB = BG_EDGE[2] + (BG_MID[2] - BG_EDGE[2]) * (1 - edgeX);
 
+        // Hotter wax near the base heater.
         var heat = Math.max(0, Math.min(1, 1 - by));
-        var lr = LAVA_LO[0] + (LAVA_HI[0] - LAVA_LO[0]) * (1 - heat * 0.85);
-        var lg = LAVA_LO[1] + (LAVA_HI[1] - LAVA_LO[1]) * (1 - heat * 0.85);
-        var lb = LAVA_LO[2] + (LAVA_HI[2] - LAVA_LO[2]) * (1 - heat * 0.85);
+        var lr = LAVA_LO[0] + (LAVA_HI[0] - LAVA_LO[0]) * (1 - heat * 0.7);
+        var lg = LAVA_LO[1] + (LAVA_HI[1] - LAVA_LO[1]) * (1 - heat * 0.7);
+        var lb = LAVA_LO[2] + (LAVA_HI[2] - LAVA_LO[2]) * (1 - heat * 0.7);
 
-        var lidFade = by < 0.08 ? by / 0.08 : 1;
-        var fill = (1 - Math.max(0, Math.min(1, (dist + 0.015) / 0.055))) * lidFade;
-        var glow = Math.pow(Math.max(0, Math.min(1, (-dist + 0.03) / 0.1)), 1.5) * lidFade;
+        var lidFade = by < 0.07 ? by / 0.07 : 1;
+        // Sharper metaball threshold so blobs read as goo, not a solid column.
+        var fill = (1 - Math.max(0, Math.min(1, (dist + 0.01) / 0.045))) * lidFade;
+        fill = Math.pow(fill, 0.85);
+        var core = Math.pow(Math.max(0, Math.min(1, (-dist + 0.02) / 0.08)), 1.8) * lidFade;
+        var glow = Math.pow(Math.max(0, Math.min(1, (-dist + 0.04) / 0.12)), 1.4) * lidFade;
 
         var r = bgR + (lr - bgR) * fill;
         var g = bgG + (lg - bgG) * fill;
         var bl = bgB + (lb - bgB) * fill;
-        r = Math.min(255, r + glow * 36);
-        g = Math.min(255, g + glow * 28);
-        bl = Math.min(255, bl + glow * 22);
+        r = Math.min(255, r + glow * 42 + core * 30);
+        g = Math.min(255, g + glow * 28 + core * 18);
+        bl = Math.min(255, bl + glow * 12 + core * 8);
 
         data[i++] = clampByte(r);
         data[i++] = clampByte(g);
