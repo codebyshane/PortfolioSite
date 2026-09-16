@@ -336,7 +336,7 @@
 
 /* Lava lamp fluid — metaball smooth-union motion inspired by brybrant/lava-lamp,
    clipped by DinPX/Lava-Lamp contents + cover shell.
-   Goo tracks page accent; liquid is a traditional complementary lava-lamp pairing. */
+   Brand-colored Lava Lite: wax tracks accent; liquid is a classic companion hue. */
 (function () {
   var lamps = Array.prototype.slice.call(document.querySelectorAll(".lava-lamp"));
   if (!lamps.length) return;
@@ -438,16 +438,15 @@
     return [r * 255, g * 255, b * 255];
   }
 
-  // Traditional Lava Lite pairings: warm wax ↔ purple liquid, cool wax ↔ amber/rose liquid, etc.
-  function traditionalLiquidHue(gooHue) {
+  // Brand-colored Lava Lite: wax = accent; liquid = classic companion by hue family.
+  function companionLiquidHue(gooHue) {
     var h = ((gooHue % 360) + 360) % 360;
-    if (h < 50 || h >= 340) return 285; // red–orange–yellow wax → purple liquid
-    if (h < 90) return 300; // chartreuse → magenta-purple
-    if (h < 170) return 295; // green–teal → classic purple
-    if (h < 210) return 38; // cyan–sky goo → warm amber liquid
-    if (h < 255) return 28; // blue goo → golden amber liquid
-    if (h < 310) return 195; // purple–violet goo → teal liquid
-    return 205; // pink–magenta goo → blue liquid
+    // Red / orange / yellow / green / teal → purple liquid
+    if (h < 195 || h >= 340) return 288;
+    // Blue → warm amber liquid
+    if (h < 255) return 36;
+    // Purple / pink → teal–blue liquid
+    return 198;
   }
 
   function readPalette() {
@@ -462,25 +461,29 @@
     var isDark = lum(bg) < 128;
     var accentLum = lum(accent);
     var hsl = rgbToHsl(accent[0], accent[1], accent[2]);
-    var liqHue = traditionalLiquidHue(hsl[0]);
+    var liqHue = companionLiquidHue(hsl[0]);
 
-    // Goo = button accent, with a hot wax highlight from accent-hover.
+    // Wax locked to button accent; hover + warmth for the hot core.
     LAVA_HI = accent.slice();
-    LAVA_LO = mix(hover, [255, 236, 180], 0.28);
-    if (accentLum < 45) {
-      LAVA_HI = mix(accent, hover, 0.4);
-      LAVA_LO = mix(hover, [255, 230, 190], 0.45);
-    } else if (accentLum > 210) {
-      LAVA_LO = mix(hover, [255, 255, 255], 0.15);
+    LAVA_LO = mix(hover, [255, 244, 210], 0.22);
+    if (accentLum < 50) {
+      // Near-black accents still need a readable hot highlight.
+      LAVA_HI = mix(accent, hover, 0.35);
+      LAVA_LO = mix(hover, [255, 236, 200], 0.5);
+    } else if (accentLum > 215) {
+      LAVA_LO = mix(hover, [255, 255, 255], 0.2);
     }
 
-    // Liquid = traditional complement; light theme stays pale, dark theme stays deep.
     if (isDark) {
-      BG_EDGE = hslToRgb(liqHue, 0.4, 0.18);
-      BG_MID = hslToRgb(liqHue, 0.46, 0.3);
+      // Jewel-tone companion — deep but not charcoal.
+      BG_EDGE = hslToRgb(liqHue, 0.48, 0.2);
+      BG_MID = hslToRgb(liqHue, 0.52, 0.34);
     } else {
-      BG_EDGE = hslToRgb(liqHue, 0.18, 0.92);
-      BG_MID = hslToRgb(liqHue, 0.22, 0.86);
+      // Milky translucent companion — pale wash, not a mid-tone slab.
+      var milky = hslToRgb(liqHue, 0.22, 0.9);
+      var cream = [250, 246, 238];
+      BG_EDGE = mix(cream, milky, 0.45);
+      BG_MID = mix(cream, milky, 0.7);
     }
   }
 
@@ -500,14 +503,14 @@
     var H = inst.h;
     var data = inst.img.data;
     var time = t * BALLSPEED;
-    // Distinct rising/falling wax blobs — readable as lava, not a solid fill.
+    // Heater pool + separate rising blobs with soft merge necks.
     var blobs = [
-      { x: 0.5, y: 0.78 + Math.sin(time * 0.9 + 0.4) * 0.08, r: 0.2 },
-      { x: 0.5, y: 0.5 + Math.sin(time + 2) * 0.3, r: 0.14 },
-      { x: 0.32, y: 0.5 + Math.sin(time * 0.95) * 0.26, r: 0.11 },
-      { x: 0.68, y: 0.5 + Math.sin(time + 4.2) * 0.24, r: 0.11 },
-      { x: 0.42, y: 0.5 + Math.sin(time * 0.7 + 6) * 0.22, r: 0.13 },
-      { x: 0.58, y: 0.5 + Math.sin(time * 0.7 + 9) * 0.22, r: 0.12 }
+      { x: 0.5, y: 0.82 + Math.sin(time * 0.85) * 0.05, r: 0.22 },
+      { x: 0.5, y: 0.48 + Math.sin(time + 2.1) * 0.28, r: 0.135 },
+      { x: 0.3, y: 0.52 + Math.sin(time * 0.92 + 0.6) * 0.25, r: 0.105 },
+      { x: 0.7, y: 0.5 + Math.sin(time + 4.1) * 0.23, r: 0.105 },
+      { x: 0.4, y: 0.46 + Math.sin(time * 0.68 + 6.2) * 0.22, r: 0.12 },
+      { x: 0.6, y: 0.5 + Math.sin(time * 0.68 + 9.1) * 0.21, r: 0.115 }
     ];
 
     var i = 0;
@@ -518,9 +521,10 @@
       var by = (uy - TOP) / (BOTTOM - TOP);
       for (x = 0; x < W; x++) {
         var ux = x / (W - 1);
-        // Fat bottom wax pool + rising spheres (brybrant-style smooth union).
-        var dist = 0.86 - by;
-        dist = smin(dist, by - 0.015, 0.06);
+
+        // Bottom wax pool (heater) + rising metaballs.
+        var dist = 0.84 - by;
+        dist = smin(dist, by - 0.012, 0.05);
         var b;
         for (b = 0; b < blobs.length; b++) {
           var blob = blobs[b];
@@ -528,29 +532,43 @@
         }
 
         var edgeX = Math.abs(ux - 0.5) * 2;
-        var bgR = BG_EDGE[0] + (BG_MID[0] - BG_EDGE[0]) * (1 - edgeX);
-        var bgG = BG_EDGE[1] + (BG_MID[1] - BG_EDGE[1]) * (1 - edgeX);
-        var bgB = BG_EDGE[2] + (BG_MID[2] - BG_EDGE[2]) * (1 - edgeX);
+        var bgR = BG_EDGE[0] + (BG_MID[0] - BG_EDGE[0]) * (1 - edgeX * 0.85);
+        var bgG = BG_EDGE[1] + (BG_MID[1] - BG_EDGE[1]) * (1 - edgeX * 0.85);
+        var bgB = BG_EDGE[2] + (BG_MID[2] - BG_EDGE[2]) * (1 - edgeX * 0.85);
 
-        // Hotter wax near the base heater.
+        // Soft glass glint so the vessel reads as liquid in a bottle.
+        var glint = Math.exp(-Math.pow((ux - 0.28) / 0.1, 2)) * 0.12 * (1 - by * 0.35);
+        bgR = Math.min(255, bgR + glint * 70);
+        bgG = Math.min(255, bgG + glint * 70);
+        bgB = Math.min(255, bgB + glint * 65);
+
+        // Hotter wax near the base; cooler rims, hotter cores.
         var heat = Math.max(0, Math.min(1, 1 - by));
-        var lr = LAVA_LO[0] + (LAVA_HI[0] - LAVA_LO[0]) * (1 - heat * 0.7);
-        var lg = LAVA_LO[1] + (LAVA_HI[1] - LAVA_LO[1]) * (1 - heat * 0.7);
-        var lb = LAVA_LO[2] + (LAVA_HI[2] - LAVA_LO[2]) * (1 - heat * 0.7);
+        var lr = LAVA_LO[0] + (LAVA_HI[0] - LAVA_LO[0]) * (1 - heat * 0.65);
+        var lg = LAVA_LO[1] + (LAVA_HI[1] - LAVA_LO[1]) * (1 - heat * 0.65);
+        var lb = LAVA_LO[2] + (LAVA_HI[2] - LAVA_LO[2]) * (1 - heat * 0.65);
 
-        var lidFade = by < 0.07 ? by / 0.07 : 1;
-        // Sharper metaball threshold so blobs read as goo, not a solid column.
-        var fill = (1 - Math.max(0, Math.min(1, (dist + 0.01) / 0.045))) * lidFade;
-        fill = Math.pow(fill, 0.85);
-        var core = Math.pow(Math.max(0, Math.min(1, (-dist + 0.02) / 0.08)), 1.8) * lidFade;
-        var glow = Math.pow(Math.max(0, Math.min(1, (-dist + 0.04) / 0.12)), 1.4) * lidFade;
+        var lidFade = by < 0.06 ? by / 0.06 : 1;
+        var fill = (1 - Math.max(0, Math.min(1, (dist + 0.008) / 0.04))) * lidFade;
+        fill = Math.pow(Math.max(0, fill), 0.8);
+        var core = Math.pow(Math.max(0, Math.min(1, (-dist + 0.015) / 0.07)), 2) * lidFade;
+        var rim = Math.pow(Math.max(0, Math.min(1, 1 - Math.abs(dist) / 0.05)), 1.2) * fill;
+        var glow = Math.pow(Math.max(0, Math.min(1, (-dist + 0.035) / 0.11)), 1.35) * lidFade;
 
-        var r = bgR + (lr - bgR) * fill;
-        var g = bgG + (lg - bgG) * fill;
-        var bl = bgB + (lb - bgB) * fill;
-        r = Math.min(255, r + glow * 42 + core * 30);
-        g = Math.min(255, g + glow * 28 + core * 18);
-        bl = Math.min(255, bl + glow * 12 + core * 8);
+        // Cooler rim (pull toward liquid), hotter core (pull toward highlight).
+        var waxR = lr + (bgR - lr) * rim * 0.18;
+        var waxG = lg + (bgG - lg) * rim * 0.18;
+        var waxB = lb + (bgB - lb) * rim * 0.18;
+        waxR = waxR + (LAVA_LO[0] - waxR) * core * 0.55;
+        waxG = waxG + (LAVA_LO[1] - waxG) * core * 0.55;
+        waxB = waxB + (LAVA_LO[2] - waxB) * core * 0.55;
+
+        var r = bgR + (waxR - bgR) * fill;
+        var g = bgG + (waxG - bgG) * fill;
+        var bl = bgB + (waxB - bgB) * fill;
+        r = Math.min(255, r + glow * 38 + core * 28);
+        g = Math.min(255, g + glow * 26 + core * 16);
+        bl = Math.min(255, bl + glow * 14 + core * 8);
 
         data[i++] = clampByte(r);
         data[i++] = clampByte(g);
