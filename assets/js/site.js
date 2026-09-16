@@ -474,13 +474,13 @@
       LAVA_LO = mix(hover, [255, 255, 255], 0.15);
     }
 
-    // Liquid = traditional complement, tuned per theme for blob contrast.
+    // Liquid = traditional complement, lighter so accent wax reads clearly.
     if (isDark) {
-      BG_EDGE = hslToRgb(liqHue, 0.42, 0.14);
-      BG_MID = hslToRgb(liqHue, 0.5, 0.28);
+      BG_EDGE = hslToRgb(liqHue, 0.38, 0.32);
+      BG_MID = hslToRgb(liqHue, 0.44, 0.46);
     } else {
-      BG_EDGE = hslToRgb(liqHue, 0.28, 0.78);
-      BG_MID = hslToRgb(liqHue, 0.34, 0.68);
+      BG_EDGE = hslToRgb(liqHue, 0.22, 0.86);
+      BG_MID = hslToRgb(liqHue, 0.28, 0.78);
     }
   }
 
