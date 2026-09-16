@@ -374,17 +374,12 @@
       <div class="site-footer__inner">
         <div class="site-footer__top">
           <div class="site-footer__brand-row">
+            <!-- Shell silhouette: DinPX/Lava-Lamp (MIT). Fluid: brybrant/lava-lamp metaballs. -->
             <div class="lava-lamp" aria-hidden="true">
-              <span class="lava-lamp__cap"></span>
-              <span class="lava-lamp__glass">
-                <span class="lava-lamp__liquid"></span>
-                <span class="lava-lamp__blob lava-lamp__blob--a"></span>
-                <span class="lava-lamp__blob lava-lamp__blob--b"></span>
-                <span class="lava-lamp__blob lava-lamp__blob--c"></span>
-                <span class="lava-lamp__blob lava-lamp__blob--d"></span>
-                <span class="lava-lamp__shine"></span>
-              </span>
-              <span class="lava-lamp__base"></span>
+              <div class="lava-lamp__vessel">
+                <canvas class="lava-lamp__fluid" width="60" height="150"></canvas>
+              </div>
+              <div class="lava-lamp__cover"></div>
             </div>
             <p class="site-footer__brand">Shane Ferguson · Tampa Bay</p>
           </div>

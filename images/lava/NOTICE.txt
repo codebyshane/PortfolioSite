@@ -1,0 +1,3 @@
+Lamp shell textures (cover.png, contents.png) adapted from
+DinPX/Lava-Lamp — Copyright (c) 2025 DinPixels — MIT License.
+https://github.com/DinPX/Lava-Lamp
