@@ -268,6 +268,51 @@
   });
 })();
 
+/* Hypno hire CTA — full moon, one hour from local midnight. Preview: ?hypno=now */
+(function () {
+  var SYNODIC = 29.530588853;
+  // Known new moon near J2000 (UTC): 2000-01-06 18:14
+  var KNOWN_NEW = Date.UTC(2000, 0, 6, 18, 14, 0);
+  var FULL_AT = SYNODIC / 2;
+  // Within ~18h of exact full so the midnight hour nearest full moon catches it.
+  var FULL_WINDOW_DAYS = 0.75;
+  var root = document.documentElement;
+  var forceNow = /\bhypno=now\b/.test(location.search);
+
+  function moonAgeDays(date) {
+    var days = (date.getTime() - KNOWN_NEW) / 86400000;
+    return ((days % SYNODIC) + SYNODIC) % SYNODIC;
+  }
+
+  function isFullMoonNight(date) {
+    var age = moonAgeDays(date);
+    var dist = Math.abs(age - FULL_AT);
+    dist = Math.min(dist, SYNODIC - dist);
+    return dist <= FULL_WINDOW_DAYS;
+  }
+
+  function isMidnightHour(date) {
+    return date.getHours() === 0;
+  }
+
+  function shouldHypno(date) {
+    if (forceNow) return true;
+    return isMidnightHour(date) && isFullMoonNight(date);
+  }
+
+  function sync() {
+    var on = shouldHypno(new Date());
+    root.classList.toggle("is-hypno-moon", on);
+    root.toggleAttribute("data-hypno", on);
+  }
+
+  sync();
+  window.setInterval(sync, 30000);
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) sync();
+  });
+})();
+
 (function () {
   var navToggle = document.querySelector(".nav-toggle");
   var nav = document.getElementById("site-nav");

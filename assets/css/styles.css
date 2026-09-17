@@ -194,6 +194,7 @@
   }
 
   .btn,
+  html.is-hypno-moon .btn--primary::before,
   .theme-toggle,
   .nav-toggle {
     animation: none;
@@ -642,6 +643,91 @@ p:last-child {
     )
       border-box;
   animation: btn-orbit 1.05s linear infinite;
+}
+
+/* Full-moon midnight easter egg — hypnotic spiral hire CTAs. */
+html.is-hypno-moon .btn--primary {
+  overflow: hidden;
+  color: #fff;
+  background: #111;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  animation: none;
+}
+
+html.is-hypno-moon .btn--primary::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 50% auto auto 50%;
+  width: 220%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: center / cover no-repeat url("../../images/hypno-spiral.svg");
+  opacity: 0.92;
+  animation: hypno-spin 4.8s linear infinite;
+  pointer-events: none;
+}
+
+html.is-hypno-moon .btn--primary::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: rgb(0 0 0 / 0.26);
+  pointer-events: none;
+}
+
+html.is-hypno-moon .btn--primary .btn__label,
+html.is-hypno-moon .btn--primary .btn__icon {
+  color: #fff;
+  text-shadow:
+    0 0 0.2rem rgb(255 255 255 / 0.85),
+    0 0 0.55rem rgb(255 255 255 / 0.45),
+    0 1px 2px rgb(0 0 0 / 0.85);
+}
+
+html.is-hypno-moon .btn--primary:hover,
+html.is-hypno-moon .btn--primary:focus-visible,
+html.is-hypno-moon .btn--primary.is-acting {
+  color: #fff;
+  border-color: transparent;
+  background: #111;
+  animation: none;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.22),
+    0 0 0.85rem rgb(255 255 255 / 0.16);
+}
+
+html.is-hypno-moon .btn--primary:hover::after,
+html.is-hypno-moon .btn--primary:focus-visible::after,
+html.is-hypno-moon .btn--primary.is-acting::after {
+  background: rgb(0 0 0 / 0.34);
+}
+
+html.is-hypno-moon .btn--primary:hover::before,
+html.is-hypno-moon .btn--primary:focus-visible::before,
+html.is-hypno-moon .btn--primary.is-acting::before {
+  animation-duration: 1.85s;
+  opacity: 0.88;
+}
+
+html.is-hypno-moon .btn--primary:hover .btn__label,
+html.is-hypno-moon .btn--primary:focus-visible .btn__label,
+html.is-hypno-moon .btn--primary.is-acting .btn__label,
+html.is-hypno-moon .btn--primary:hover .btn__icon,
+html.is-hypno-moon .btn--primary:focus-visible .btn__icon,
+html.is-hypno-moon .btn--primary.is-acting .btn__icon {
+  text-shadow:
+    0 0 0.25rem rgb(255 255 255 / 0.9),
+    0 0 0.7rem rgb(255 255 255 / 0.5),
+    0 1px 2px rgb(0 0 0 / 0.9);
+}
+
+@keyframes hypno-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .btn--ghost {
