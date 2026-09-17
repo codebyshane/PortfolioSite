@@ -645,6 +645,63 @@ p:last-child {
   animation: btn-orbit 1.05s linear infinite;
 }
 
+/* 4:20pm easter egg — brybrant purple/gold lava inside hire CTAs (?lava=now). */
+html.is-lava-btn .btn--primary {
+  overflow: hidden;
+  color: #fff;
+  background: #661a66;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  animation: none;
+}
+
+html.is-lava-btn .btn--primary .btn__lava {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+html.is-lava-btn .btn--primary::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: rgb(40 8 48 / 0.28);
+  pointer-events: none;
+}
+
+html.is-lava-btn .btn--primary .btn__label,
+html.is-lava-btn .btn--primary .btn__icon {
+  color: #fff;
+  text-shadow:
+    0 0 0.2rem rgb(255 255 255 / 0.9),
+    0 0 0.5rem rgb(255 255 255 / 0.45),
+    0 1px 3px rgb(0 0 0 / 0.95),
+    0 0 0.65rem rgb(0 0 0 / 0.8);
+}
+
+html.is-lava-btn .btn--primary:hover,
+html.is-lava-btn .btn--primary:focus-visible,
+html.is-lava-btn .btn--primary.is-acting {
+  color: #fff;
+  border-color: transparent;
+  background: #661a66;
+  animation: none;
+  box-shadow:
+    0 0 0 1px rgb(255 220 120 / 0.35),
+    0 0 0.9rem rgb(255 160 40 / 0.28);
+}
+
+html.is-lava-btn .btn--primary:hover::after,
+html.is-lava-btn .btn--primary:focus-visible::after,
+html.is-lava-btn .btn--primary.is-acting::after {
+  background: rgb(40 8 48 / 0.36);
+}
+
 /* Full-moon midnight easter egg — hypnotic spiral hire CTAs. */
 html.is-hypno-moon .btn--primary {
   overflow: hidden;

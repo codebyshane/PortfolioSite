@@ -296,6 +296,7 @@
   }
 
   function shouldHypno(date) {
+    if (root.classList.contains("is-lava-btn")) return false;
     if (forceNow) return true;
     return isMidnightHour(date) && isFullMoonNight(date);
   }
@@ -308,6 +309,301 @@
 
   sync();
   window.setInterval(sync, 30000);
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) sync();
+  });
+})();
+
+/* Lava hire CTA — daily at local 4:20pm for one minute. Preview: ?lava=now */
+(function () {
+  var root = document.documentElement;
+  var forceNow = /\blava=now\b/.test(location.search);
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  var buttons = Array.prototype.slice.call(
+    document.querySelectorAll(".btn--primary")
+  );
+  if (!buttons.length) return;
+
+  // brybrant/lava-lamp palette: purple liquid, HDR yellow→gold wax.
+  var BALLSPEED = 0.2;
+  var WORLD_Y = 5.2;
+  var WORLD_X = 8.5;
+  var WORLD_R = 4.6;
+  var K = 1.35 / WORLD_R;
+  var BG_EDGE = [102, 26, 102];
+  var BG_MID = [140, 45, 140];
+  var LAVA_LO = [255, 140, 30];
+  var LAVA_HI = [255, 210, 55];
+  var LAVA_CORE = [255, 245, 170];
+  var LIGHT = [-0.98, 0.12];
+
+  var instances = [];
+  var running = false;
+  var frameId = 0;
+  var start = 0;
+
+  function clampByte(n) {
+    return Math.max(0, Math.min(255, n | 0));
+  }
+
+  function clamp01(n) {
+    return Math.max(0, Math.min(1, n));
+  }
+
+  function mix(a, b, t) {
+    return [
+      a[0] + (b[0] - a[0]) * t,
+      a[1] + (b[1] - a[1]) * t,
+      a[2] + (b[2] - a[2]) * t
+    ];
+  }
+
+  function opSmoothUnion(d1, d2, k) {
+    var h = clamp01(0.5 + (0.5 * (d2 - d1)) / k);
+    return d2 * (1 - h) + d1 * h - k * h * (1 - h);
+  }
+
+  function mapY(y) {
+    return 0.5 - y / WORLD_Y;
+  }
+
+  function mapX(z) {
+    return 0.5 + z / WORLD_X;
+  }
+
+  function mapR(r) {
+    return r / WORLD_R;
+  }
+
+  function sphere(px, py, cx, cy, r, aspect) {
+    var dx = (px - cx) * aspect;
+    var dy = py - cy;
+    return Math.hypot(dx, dy) - r;
+  }
+
+  function getDist(ux, by, time, aspect) {
+    // Floating blobs only — no floor/ceiling pools in the pill CTAs.
+    var dist = 1;
+    dist = opSmoothUnion(
+      dist,
+      sphere(
+        ux,
+        by,
+        mapX(Math.sin(time)),
+        mapY(Math.sin(time + 2) * 3),
+        mapR(1.85),
+        aspect
+      ),
+      K
+    );
+    dist = opSmoothUnion(
+      dist,
+      sphere(
+        ux,
+        by,
+        mapX(4 + Math.cos(time)),
+        mapY(Math.sin(time) * 2),
+        mapR(1.75),
+        aspect
+      ),
+      K
+    );
+    dist = opSmoothUnion(
+      dist,
+      sphere(
+        ux,
+        by,
+        mapX(-4 - Math.cos(time)),
+        mapY(Math.sin(time + 4) * 2),
+        mapR(1.75),
+        aspect
+      ),
+      K
+    );
+    dist = opSmoothUnion(
+      dist,
+      sphere(
+        ux,
+        by,
+        mapX(2.5 - Math.cos(time * 0.75)),
+        mapY(Math.sin(time * 0.75 + 6) * 2),
+        mapR(2.35),
+        aspect
+      ),
+      K
+    );
+    dist = opSmoothUnion(
+      dist,
+      sphere(
+        ux,
+        by,
+        mapX(-2.5 + Math.cos(time * 0.75 + 3)),
+        mapY(Math.sin(time * 0.75 + 9) * 2),
+        mapR(2.35),
+        aspect
+      ),
+      K
+    );
+    return dist;
+  }
+
+  function sampleNormal(ux, by) {
+    var nx = 0.5 - ux;
+    var ny = 0.42 - by;
+    var len = Math.hypot(nx, ny) || 1;
+    return [nx / len, ny / len];
+  }
+
+  function paintInstance(inst, t) {
+    var W = inst.w;
+    var H = inst.h;
+    var data = inst.img.data;
+    var time = t * BALLSPEED;
+    var soft = Math.max(1.2 / W, mapR(0.22));
+    var aspect = inst.aspect;
+    var i = 0;
+    var y;
+    var x;
+
+    for (y = 0; y < H; y++) {
+      var by = y / (H - 1);
+      for (x = 0; x < W; x++) {
+        var ux = x / (W - 1);
+        var dist = getDist(ux, by, time, aspect);
+
+        var edgeX = Math.abs(ux - 0.5) * 2;
+        var bg = [
+          BG_EDGE[0] + (BG_MID[0] - BG_EDGE[0]) * (1 - edgeX * 0.65),
+          BG_EDGE[1] + (BG_MID[1] - BG_EDGE[1]) * (1 - edgeX * 0.65),
+          BG_EDGE[2] + (BG_MID[2] - BG_EDGE[2]) * (1 - edgeX * 0.65)
+        ];
+
+        var field = clamp01(0.5 - dist / soft);
+        field = field * field * (3 - 2 * field);
+        field = field * field;
+
+        var n = sampleNormal(ux, by);
+        var diff = n[0] * LIGHT[0] + n[1] * LIGHT[1];
+        var shade = clamp01((1 - diff) * 0.5);
+
+        var heat = clamp01(1 - by);
+        var lava = [
+          LAVA_LO[0] + (LAVA_HI[0] - LAVA_LO[0]) * (1 - heat * 0.35),
+          LAVA_LO[1] + (LAVA_HI[1] - LAVA_LO[1]) * (1 - heat * 0.35),
+          LAVA_LO[2] + (LAVA_HI[2] - LAVA_LO[2]) * (1 - heat * 0.35)
+        ];
+        var core = clamp01((-dist) / (soft * 1.8));
+        core = Math.pow(core, 1.35);
+        lava = mix(lava, LAVA_CORE, core * 0.45);
+        lava = [
+          Math.min(255, lava[0] * (1.05 + shade * 0.35)),
+          Math.min(255, lava[1] * (0.95 + shade * 0.25)),
+          Math.min(255, lava[2] * (0.55 + shade * 0.2))
+        ];
+
+        var col = mix(bg, lava, field);
+        data[i++] = clampByte(col[0]);
+        data[i++] = clampByte(col[1]);
+        data[i++] = clampByte(col[2]);
+        data[i++] = 255;
+      }
+    }
+    inst.ctx.putImageData(inst.img, 0, 0);
+  }
+
+  function paint(t) {
+    instances.forEach(function (inst) {
+      paintInstance(inst, t);
+    });
+  }
+
+  function frame(now) {
+    if (!running) return;
+    paint((now - start) / 1000);
+    frameId = requestAnimationFrame(frame);
+  }
+
+  function mount() {
+    instances = buttons
+      .map(function (btn) {
+        if (btn.querySelector(".btn__lava")) return null;
+        var canvas = document.createElement("canvas");
+        canvas.className = "btn__lava";
+        canvas.setAttribute("aria-hidden", "true");
+        var rect = btn.getBoundingClientRect();
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var cssW = Math.max(rect.width, 1);
+        var cssH = Math.max(rect.height, 1);
+        canvas.width = Math.max(2, Math.round(cssW * dpr));
+        canvas.height = Math.max(2, Math.round(cssH * dpr));
+        btn.insertBefore(canvas, btn.firstChild);
+        var ctx = canvas.getContext("2d", { alpha: false });
+        if (!ctx) return null;
+        return {
+          btn: btn,
+          canvas: canvas,
+          ctx: ctx,
+          w: canvas.width,
+          h: canvas.height,
+          aspect: cssW / cssH,
+          img: ctx.createImageData(canvas.width, canvas.height)
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function unmount() {
+    instances.forEach(function (inst) {
+      if (inst.canvas && inst.canvas.parentNode) {
+        inst.canvas.parentNode.removeChild(inst.canvas);
+      }
+    });
+    instances = [];
+    buttons.forEach(function (btn) {
+      var leftover = btn.querySelector(".btn__lava");
+      if (leftover) leftover.parentNode.removeChild(leftover);
+    });
+  }
+
+  function startLava() {
+    if (running) return;
+    running = true;
+    root.classList.add("is-lava-btn");
+    root.classList.remove("is-hypno-moon");
+    root.removeAttribute("data-hypno");
+    mount();
+    paint(0);
+    if (reduce.matches) return;
+    start = performance.now();
+    frameId = requestAnimationFrame(frame);
+  }
+
+  function stopLava() {
+    if (!running) return;
+    running = false;
+    if (frameId) cancelAnimationFrame(frameId);
+    frameId = 0;
+    unmount();
+    root.classList.remove("is-lava-btn");
+  }
+
+  function isFourTwenty(date) {
+    return date.getHours() === 16 && date.getMinutes() === 20;
+  }
+
+  function shouldLava(date) {
+    if (forceNow) return true;
+    return isFourTwenty(date);
+  }
+
+  function sync() {
+    if (shouldLava(new Date())) startLava();
+    else stopLava();
+  }
+
+  sync();
+  // Poll often enough to catch the one-minute window.
+  window.setInterval(sync, 5000);
   document.addEventListener("visibilitychange", function () {
     if (!document.hidden) sync();
   });
